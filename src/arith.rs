@@ -12,29 +12,20 @@ pub enum Node {
 }
 
 impl Node {
-    pub fn evaluate(&self, bindings: &HashMap<char, f32>) -> f32 {
+    pub fn evaluate(
+        &self,
+        bindings: &HashMap<char, f32>,
+    ) -> f32 {
         match *self {
-            Node::Add(ref n1, ref n2) => {
-                n1.evaluate(&bindings) + n2.evaluate(&bindings)
-            }
-            Node::Sub(ref n1, ref n2) => {
-                n1.evaluate(&bindings) - n2.evaluate(&bindings)
-            }
-            Node::Mul(ref n1, ref n2) => {
-                n1.evaluate(&bindings) * n2.evaluate(&bindings)
-            }
-            Node::Div(ref n1, ref n2) => {
-                n1.evaluate(&bindings) / n2.evaluate(&bindings)
-            }
-            Node::Exp(ref n1, ref n2) => {
-                n1.evaluate(&bindings).powf(n2.evaluate(&bindings))
-            }
+            Node::Add(ref n1, ref n2) => n1.evaluate(&bindings) + n2.evaluate(&bindings),
+            Node::Sub(ref n1, ref n2) => n1.evaluate(&bindings) - n2.evaluate(&bindings),
+            Node::Mul(ref n1, ref n2) => n1.evaluate(&bindings) * n2.evaluate(&bindings),
+            Node::Div(ref n1, ref n2) => n1.evaluate(&bindings) / n2.evaluate(&bindings),
+            Node::Exp(ref n1, ref n2) => n1.evaluate(&bindings).powf(n2.evaluate(&bindings)),
             Node::Constant(c) => c,
-            Node::Variable(v) => bindings.get(&v).unwrap().clone()
+            Node::Variable(v) => bindings.get(&v).unwrap().clone(),
         }
     }
 }
 
-pub struct NodeFunction {
-
-}
+pub struct NodeFunction {}

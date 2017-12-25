@@ -1,9 +1,12 @@
 use arith::Node;
-use parser_error::{ParseError, ParseResult, Expected};
+use parser_error::{Expected, ParseError, ParseResult};
 
 type BNode = Box<Node>;
 
-fn check_index<'a>(input: &'a [char], current_index: usize) -> ParseResult<()> {
+fn check_index<'a>(
+    input: &'a [char],
+    current_index: usize,
+) -> ParseResult<()> {
     if current_index >= input.len() {
         Err(ParseError::UnexpectedEnd)
     } else {
@@ -11,7 +14,10 @@ fn check_index<'a>(input: &'a [char], current_index: usize) -> ParseResult<()> {
     }
 }
 
-fn try_incr_index<'a>(input: &'a [char], current_index: usize) -> ParseResult<usize> {
+fn try_incr_index<'a>(
+    input: &'a [char],
+    current_index: usize,
+) -> ParseResult<usize> {
     let mut index = current_index + 1;
     check_index(&input, index)?;
 
@@ -23,7 +29,10 @@ fn try_incr_index<'a>(input: &'a [char], current_index: usize) -> ParseResult<us
     Ok(index)
 }
 
-fn incr_index<'a>(input: &'a [char], current_index: usize) -> usize {
+fn incr_index<'a>(
+    input: &'a [char],
+    current_index: usize,
+) -> usize {
     let mut index = current_index + 1;
 
     while index < input.len() && input[index] == ' ' {
@@ -33,21 +42,27 @@ fn incr_index<'a>(input: &'a [char], current_index: usize) -> usize {
     index
 }
 
-fn parse_expression<'a>(input: &'a [char], current_index: usize) -> ParseResult<BNode> {
+fn parse_expression<'a>(
+    input: &'a [char],
+    current_index: usize,
+) -> ParseResult<BNode> {
     let (root, index) = parse_add(&input, current_index)?;
 
     if index < input.len() {
-        Err(ParseError::UnconsumedInput(index)) 
+        Err(ParseError::UnconsumedInput(index))
     } else {
         Ok(root)
     }
 }
 
 
-fn parse_add<'a>(input: &'a [char], current_index: usize) -> ParseResult<(BNode, usize)> {
+fn parse_add<'a>(
+    input: &'a [char],
+    current_index: usize,
+) -> ParseResult<(BNode, usize)> {
     let (mut base, mut index) = parse_mul(&input, current_index)?;
 
-    while index < input.len() && (input[index] == '-' || input[index] == '+') { 
+    while index < input.len() && (input[index] == '-' || input[index] == '+') {
         let op_index = index;
         index = try_incr_index(&input, index)?;
         let (term, new_index) = parse_mul(&input, index)?;
@@ -64,10 +79,13 @@ fn parse_add<'a>(input: &'a [char], current_index: usize) -> ParseResult<(BNode,
     Ok((base, index))
 }
 
-fn parse_mul<'a>(input: &'a [char], current_index: usize) -> ParseResult<(BNode, usize)> {
+fn parse_mul<'a>(
+    input: &'a [char],
+    current_index: usize,
+) -> ParseResult<(BNode, usize)> {
     let (mut base, mut index) = parse_exp(&input, current_index)?;
 
-    while index < input.len() && (input[index] == '*' || input[index] == '/') { 
+    while index < input.len() && (input[index] == '*' || input[index] == '/') {
         let op_index = index;
         index = try_incr_index(&input, index)?;
         let (term, new_index) = parse_exp(&input, index)?;
@@ -84,9 +102,12 @@ fn parse_mul<'a>(input: &'a [char], current_index: usize) -> ParseResult<(BNode,
     Ok((base, index))
 }
 
-fn parse_exp<'a>(input: &'a [char], current_index: usize) -> ParseResult<(BNode, usize)> {
+fn parse_exp<'a>(
+    input: &'a [char],
+    current_index: usize,
+) -> ParseResult<(BNode, usize)> {
     let (base, mut index) = parse_primary(&input, current_index)?;
-  
+
     if index < input.len() && input[index] == '^' {
         index = try_incr_index(&input, index)?;
 
@@ -99,7 +120,10 @@ fn parse_exp<'a>(input: &'a [char], current_index: usize) -> ParseResult<(BNode,
     }
 }
 
-fn parse_primary<'a>(input: &'a [char], current_index: usize) -> ParseResult<(BNode, usize)> {
+fn parse_primary<'a>(
+    input: &'a [char],
+    current_index: usize,
+) -> ParseResult<(BNode, usize)> {
     let mut index = current_index;
 
     if input[index] == '(' {
@@ -116,7 +140,7 @@ fn parse_primary<'a>(input: &'a [char], current_index: usize) -> ParseResult<(BN
             Err(ParseError::UnexpectedChar {
                 pos: index,
                 c: input[index],
-                exp: Expected::Char(')')
+                exp: Expected::Char(')'),
             })
         }
     } else {
@@ -124,68 +148,70 @@ fn parse_primary<'a>(input: &'a [char], current_index: usize) -> ParseResult<(BN
     }
 }
 
-fn parse_base<'a> (input: &'a [char], current_index: usize) -> ParseResult<(BNode, usize)> {
+fn parse_base<'a>(
+    input: &'a [char],
+    current_index: usize,
+) -> ParseResult<(BNode, usize)> {
     let mut index = current_index;
     check_index(&input, index)?;
 
     let mut negative = false;
     if input[index] == '-' {
-        negative = true; 
+        negative = true;
         index = try_incr_index(&input, index)?;
     }
-    
+
     let (base, new_index) = match input[index] {
         'x' | 'y' | 'z' => {
-            let node =  Node::Variable(input[index]);
+            let node = Node::Variable(input[index]);
             index = incr_index(&input, index);
             (Box::new(node), index)
         },
-        d if d.is_digit(10) => {
-            parse_number(input, index)?
-        }
+        d if d.is_digit(10) => parse_number(input, index)?,
         c => {
-            return Err(ParseError::UnexpectedChar{
+            return Err(ParseError::UnexpectedChar {
                 c: c,
                 pos: index,
-                exp: Expected::Base
+                exp: Expected::Base,
             })
-        }
+        },
     };
 
     let result_node;
     if negative {
         let constant = Box::new(Node::Constant(-1.0));
         result_node = Box::new(Node::Mul(constant, base));
-    }  else {
+    } else {
         result_node = base;
     }
 
     Ok((result_node, new_index))
 }
 
-fn parse_number<'a> (input: &'a [char], current_index: usize) 
--> ParseResult<(BNode, usize)>
-{
+fn parse_number<'a>(
+    input: &'a [char],
+    current_index: usize,
+) -> ParseResult<(BNode, usize)> {
     let mut index = current_index;
-    if ! input[index].is_digit(10) {
-        return Err(ParseError::UnexpectedChar{
+    if !input[index].is_digit(10) {
+        return Err(ParseError::UnexpectedChar {
             c: input[index],
             pos: index,
-            exp: Expected::Constant
-        })
+            exp: Expected::Constant,
+        });
     }
-    
-    let mut buffer = String::new();    
+
+    let mut buffer = String::new();
     let mut found_decimal = false;
     while input[index].is_digit(10) {
         buffer.push(input[index]);
         index += 1;
 
-		if index >= input.len() {
-			break;
-		}
+        if index >= input.len() {
+            break;
+        }
 
-        if  (! found_decimal) && input[index] == '.' {
+        if (!found_decimal) && input[index] == '.' {
             buffer.push(input[index]);
             index += 1;
             found_decimal = true;
@@ -224,18 +250,24 @@ mod tests {
     use super::*;
     use std::collections::HashMap;
 
-    fn assert_constant(result: &Node, expected: f32) {
+    fn assert_constant(
+        result: &Node,
+        expected: f32,
+    ) {
         if let &Node::Constant(ref c) = result {
-			assert_similiar!(c, expected);
-		} else {
+            assert_similiar!(c, expected);
+        } else {
             panic!(format!("Expected constant, found {:?}", result))
         }
     }
 
-    fn assert_variable(result: &Node, expected: char) {
+    fn assert_variable(
+        result: &Node,
+        expected: char,
+    ) {
         if let &Node::Variable(c) = result {
-			assert_eq!(c, expected);
-		} else {
+            assert_eq!(c, expected);
+        } else {
             panic!(format!("Expected variable, found {:?}", result))
         }
     }
@@ -251,7 +283,7 @@ mod tests {
 
         input = "123.1232".chars().collect();
         result = parse_number(&input, 0).unwrap();
-	    assert_constant(&result.0, 123.1232);
+        assert_constant(&result.0, 123.1232);
 
         input = "0.1010110".chars().collect();
         result = parse_number(&input, 0).unwrap();
@@ -261,12 +293,12 @@ mod tests {
         result = parse_number(&input, 0).unwrap();
         assert_constant(&result.0, 0.101);
         assert_eq!(result.1, 5);
-    
+
         input = "0.a101a0110".chars().collect();
         result = parse_number(&input, 0).unwrap();
         assert_constant(&result.0, 0.0);
         assert_eq!(result.1, 2);
-        
+
         input = " 1 + 2 + 34 + 456543.23 + 0.101a0110".chars().collect();
         result = parse_number(&input, 9).unwrap();
         assert_constant(&result.0, 34.0);
@@ -290,7 +322,7 @@ mod tests {
         result = parse_base(&input, 4).unwrap();
         assert_variable(&result.0, 'z');
         assert_eq!(result.1, 6);
-    
+
         input = "0.0 + x * 9".chars().collect();
         result = parse_base(&input, 10).unwrap();
         assert_constant(&result.0, 9.0);
@@ -298,13 +330,16 @@ mod tests {
 
         input = "-2.0".chars().collect();
         result = parse_base(&input, 0).unwrap();
-        assert_eq!(format!("{:?}", result.0), "Mul(Constant(-1.0), Constant(2.0))");
+        assert_eq!(
+            format!("{:?}", result.0),
+            "Mul(Constant(-1.0), Constant(2.0))"
+        );
 
         input = "-".chars().collect();
         let err = parse_base(&input, 0).unwrap_err();
         assert_eq!(format!("{}", err), "Unexpected end of input");
     }
-    
+
     #[test]
     fn test_parse_primary() {
         let mut input: Vec<char>;
@@ -321,7 +356,10 @@ mod tests {
 
         input = "(-2.0)".chars().collect();
         result = parse_primary(&input, 0).unwrap();
-        assert_eq!(format!("{:?}", result.0), "Mul(Constant(-1.0), Constant(2.0))");
+        assert_eq!(
+            format!("{:?}", result.0),
+            "Mul(Constant(-1.0), Constant(2.0))"
+        );
 
         input = "1 + 2 * (0.131) + 4".chars().collect();
         result = parse_primary(&input, 8).unwrap();
@@ -353,27 +391,33 @@ mod tests {
 
         input = "(-2.0)".chars().collect();
         result = parse_exp(&input, 0).unwrap();
-        assert_eq!(format!("{:?}", result.0), "Mul(Constant(-1.0), Constant(2.0))");
-    
+        assert_eq!(
+            format!("{:?}", result.0),
+            "Mul(Constant(-1.0), Constant(2.0))"
+        );
+
         input = "0.131^x".chars().collect();
         result = parse_exp(&input, 0).unwrap();
-        assert_eq!(format!("{:?}", result.0), "Exp(Constant(0.131), Variable(\'x\'))");
+        assert_eq!(
+            format!("{:?}", result.0),
+            "Exp(Constant(0.131), Variable(\'x\'))"
+        );
 
         input = "(0.131)^(-1.2332)".chars().collect();
         result = parse_exp(&input, 0).unwrap();
         assert_eq!(
-            format!("{:?}", result.0), 
+            format!("{:?}", result.0),
             "Exp(Constant(0.131), Mul(Constant(-1.0), Constant(1.2332)))"
         );
 
         input = "(0.131)^".chars().collect();
         let err = parse_exp(&input, 0).unwrap_err();
         assert_eq!(format!("{}", err), "Unexpected end of input");
-    
+
         input = "((1.0)^(1.0))^x".chars().collect();
         result = parse_exp(&input, 0).unwrap();
         assert_eq!(
-            format!("{:?}", result.0), 
+            format!("{:?}", result.0),
             "Exp(Exp(Constant(1.0), Constant(1.0)), Variable(\'x\'))"
         );
     }
@@ -390,25 +434,25 @@ mod tests {
         input = "1.0 * 1.0 * 1.0".chars().collect();
         result = parse_mul(&input, 0).unwrap();
         assert_eq!(
-            format!("{:?}", result.0), 
+            format!("{:?}", result.0),
             "Mul(Mul(Constant(1.0), Constant(1.0)), Constant(1.0))"
         );
 
         input = "1.0 * 1.0 * 1.0^x".chars().collect();
         result = parse_mul(&input, 0).unwrap();
         assert_eq!(
-            format!("{:?}", result.0), 
+            format!("{:?}", result.0),
             "Mul(Mul(Constant(1.0), Constant(1.0)), Exp(Constant(1.0), Variable(\'x\')))"
         );
 
         input = "(0.131)^(-1.0) * -2.0 * 4.3".chars().collect();
         result = parse_mul(&input, 0).unwrap();
         assert_eq!(
-            format!("{:?}", result.0), 
+            format!("{:?}", result.0),
             "Mul(Mul(Exp(Constant(0.131), Mul(Constant(-1.0), Constant(1.0))), Mul(Constant(-1.0), Constant(2.0))), Constant(4.3))"
         );
     }
-   
+
     #[test]
     fn test_parse_add() {
         let mut input: Vec<char>;
@@ -421,7 +465,7 @@ mod tests {
         input = "1.0 + 2.0 * 3.0 - 4.0".chars().collect();
         result = parse_add(&input, 0).unwrap();
         assert_eq!(
-            format!("{:?}", result.0), 
+            format!("{:?}", result.0),
             "Sub(Add(Constant(1.0), Mul(Constant(2.0), Constant(3.0))), Constant(4.0))"
         );
     }
@@ -454,8 +498,10 @@ mod tests {
         input = "x + y - (z / x) - y + z".chars().collect();
         root = parse_expression(&input, 0).unwrap();
         assert_similiar!(root.evaluate(&bindings), 1.3709);
-        
-        input = "3.2 ^ (0.01 / 8) + (4.0 * 3 + 2 - 3^7 - (4)) / z ^ 2".chars().collect();
+
+        input = "3.2 ^ (0.01 / 8) + (4.0 * 3 + 2 - 3^7 - (4)) / z ^ 2"
+            .chars()
+            .collect();
         root = parse_expression(&input, 0).unwrap();
         assert_similiar!(root.evaluate(&bindings), -495.5297);
     }
