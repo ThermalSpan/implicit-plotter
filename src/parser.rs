@@ -33,22 +33,55 @@ fn incr_index<'a>(input: &'a [char], current_index: usize) -> usize {
     index
 }
 
-fn parse_mul<'a>(input: &'a [char], current_index: usize) -> ParseResult<(BNode, usize)> {
-    let (base, mut index) = parse_exp(&input, current_index)?;
+fn parse_expression<'a>(input: &'a [char], current_index: usize) -> ParseResult<BNode> {
+    let (root, index) = parse_add(&input, current_index)?;
 
-    let mut terms = vec![base];
-    while index < input.len() && input[index] == '*' {
+    if index < input.len() {
+        Err(ParseError::UnconsumedInput(index)) 
+    } else {
+        Ok(root)
+    }
+}
+
+
+fn parse_add<'a>(input: &'a [char], current_index: usize) -> ParseResult<(BNode, usize)> {
+    let (mut base, mut index) = parse_mul(&input, current_index)?;
+
+    while index < input.len() && (input[index] == '-' || input[index] == '+') { 
+        let op_index = index;
         index = try_incr_index(&input, index)?;
-    
-        let (term, new_index) = parse_exp(&input, index)?;
+        let (term, new_index) = parse_mul(&input, index)?;
+
+        if input[op_index] == '-' {
+            base = Box::new(Node::Sub(base, term));
+        } else {
+            base = Box::new(Node::Add(base, term));
+        }
+
         index = new_index;
-        terms.push(term);
     }
 
-    let mut term_iter = terms.drain(0..);
-    let first = term_iter.next().unwrap();
-    let node = term_iter.fold(first, |acc, t| Box::new(Node::Mul(acc, t)));
-    Ok((node, index))
+    Ok((base, index))
+}
+
+fn parse_mul<'a>(input: &'a [char], current_index: usize) -> ParseResult<(BNode, usize)> {
+    let (mut base, mut index) = parse_exp(&input, current_index)?;
+
+    while index < input.len() && (input[index] == '*' || input[index] == '/') { 
+        let op_index = index;
+        index = try_incr_index(&input, index)?;
+        let (term, new_index) = parse_exp(&input, index)?;
+
+        if input[op_index] == '*' {
+            base = Box::new(Node::Mul(base, term));
+        } else {
+            base = Box::new(Node::Div(base, term));
+        }
+
+        index = new_index;
+    }
+
+    Ok((base, index))
 }
 
 fn parse_exp<'a>(input: &'a [char], current_index: usize) -> ParseResult<(BNode, usize)> {
@@ -73,7 +106,7 @@ fn parse_primary<'a>(input: &'a [char], current_index: usize) -> ParseResult<(BN
         index = try_incr_index(&input, index)?;
 
         // TODO replace base with expression
-        let (base, mut index) = parse_exp(&input, index)?;
+        let (base, mut index) = parse_add(&input, index)?;
         check_index(&input, index)?;
 
         if input[index] == ')' {
@@ -170,7 +203,7 @@ macro_rules! assert_similiar {
         let difference = $right - $left;
 
         // TODO: I think we should have an epsilon value somewhere
-        if difference.abs() > 0.000001 {
+        if difference.abs() > 0.001 {
             let message = format!(
                 "assert_similiar failed:\nleft: {}\nright: {}",
                 $left,
@@ -189,6 +222,7 @@ macro_rules! debug_assert_similiar {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::collections::HashMap;
 
     fn assert_constant(result: &Node, expected: f32) {
         if let &Node::Constant(ref c) = result {
@@ -373,5 +407,56 @@ mod tests {
             format!("{:?}", result.0), 
             "Mul(Mul(Exp(Constant(0.131), Mul(Constant(-1.0), Constant(1.0))), Mul(Constant(-1.0), Constant(2.0))), Constant(4.3))"
         );
+    }
+   
+    #[test]
+    fn test_parse_add() {
+        let mut input: Vec<char>;
+        let mut result;
+
+        input = "x".chars().collect();
+        result = parse_add(&input, 0).unwrap();
+        assert_variable(&result.0, 'x');
+
+        input = "1.0 + 2.0 * 3.0 - 4.0".chars().collect();
+        result = parse_add(&input, 0).unwrap();
+        assert_eq!(
+            format!("{:?}", result.0), 
+            "Sub(Add(Constant(1.0), Mul(Constant(2.0), Constant(3.0))), Constant(4.0))"
+        );
+    }
+
+    #[test]
+    fn test_parse_expression() {
+        let mut input: Vec<char>;
+        let mut root;
+        let mut bindings = HashMap::new();
+        bindings.insert('x', 1.13);
+        bindings.insert('y', 4.232);
+        bindings.insert('z', 2.0939);
+
+        input = "x".chars().collect();
+        root = parse_expression(&input, 0).unwrap();
+        assert_similiar!(root.evaluate(&bindings), 1.13);
+
+        input = "x + y ^ z".chars().collect();
+        root = parse_expression(&input, 0).unwrap();
+        assert_similiar!(root.evaluate(&bindings), 21.6380);
+
+        input = "x + y - z".chars().collect();
+        root = parse_expression(&input, 0).unwrap();
+        assert_similiar!(root.evaluate(&bindings), 3.2681);
+
+        input = "x + y - z / x - y + z".chars().collect();
+        root = parse_expression(&input, 0).unwrap();
+        assert_similiar!(root.evaluate(&bindings), 1.3709);
+
+        input = "x + y - (z / x) - y + z".chars().collect();
+        root = parse_expression(&input, 0).unwrap();
+        assert_similiar!(root.evaluate(&bindings), 1.3709);
+        
+        input = "3.2 ^ (0.01 / 8) + (4.0 * 3 + 2 - 3^7 - (4)) / z ^ 2".chars().collect();
+        root = parse_expression(&input, 0).unwrap();
+        assert_similiar!(root.evaluate(&bindings), -495.5297);
     }
 }

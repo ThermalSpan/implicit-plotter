@@ -23,7 +23,8 @@ impl fmt::Display for Expected {
 pub enum ParseError {
     UnexpectedChar{pos: usize, c: char, exp: Expected},
     Float(String),
-    UnexpectedEnd
+    UnexpectedEnd,
+    UnconsumedInput(usize)
 }
 
 impl Error for ParseError {
@@ -47,6 +48,9 @@ impl fmt::Display for ParseError {
             }
             &ParseError::UnexpectedEnd => {
                 write!(f, "Unexpected end of input")
+            }
+            &ParseError::UnconsumedInput(p) => {
+                write!(f, "Unconsumed input starting at {}", p)
             }
         }
     }
