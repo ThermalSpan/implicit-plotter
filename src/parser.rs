@@ -1,4 +1,4 @@
-use arith::Node;
+use function_ir::Node;
 use parser_error::{Expected, ParseError, ParseResult};
 
 type BNode = Box<Node>;
@@ -42,7 +42,7 @@ fn incr_index<'a>(
     index
 }
 
-fn parse_expression<'a>(
+pub fn parse_expression<'a>(
     input: &'a [char],
     current_index: usize,
 ) -> ParseResult<BNode> {
@@ -54,7 +54,6 @@ fn parse_expression<'a>(
         Ok(root)
     }
 }
-
 
 fn parse_add<'a>(
     input: &'a [char],
@@ -155,6 +154,9 @@ fn parse_base<'a>(
     let mut index = current_index;
     check_index(&input, index)?;
 
+    // TODO negative needs to also bind to primary, and bind less strognly than
+    // exponentiation to
+    // avoid uneccassary confustion
     let mut negative = false;
     if input[index] == '-' {
         negative = true;
@@ -223,27 +225,6 @@ fn parse_number<'a>(
     Ok((bnode, incr_index(&input, index - 1)))
 }
 
-#[macro_export]
-macro_rules! assert_similiar {
-    ( $ left : expr , $ right : expr ) => {
-        let difference = $right - $left;
-
-        // TODO: I think we should have an epsilon value somewhere
-        if difference.abs() > 0.001 {
-            let message = format!(
-                "assert_similiar failed:\nleft: {}\nright: {}",
-                $left,
-                $right
-            );
-            panic!(message);
-        }
-    };
-}
-
-#[macro_export]
-macro_rules! debug_assert_similiar {
-    ($($arg:tt)*) => (if cfg!(debug_assertions) { assert_similiar!($($arg)*); })
-}
 
 #[cfg(test)]
 mod tests {
@@ -470,39 +451,6 @@ mod tests {
         );
     }
 
-    #[test]
-    fn test_parse_expression() {
-        let mut input: Vec<char>;
-        let mut root;
-        let mut bindings = HashMap::new();
-        bindings.insert('x', 1.13);
-        bindings.insert('y', 4.232);
-        bindings.insert('z', 2.0939);
-
-        input = "x".chars().collect();
-        root = parse_expression(&input, 0).unwrap();
-        assert_similiar!(root.evaluate(&bindings), 1.13);
-
-        input = "x + y ^ z".chars().collect();
-        root = parse_expression(&input, 0).unwrap();
-        assert_similiar!(root.evaluate(&bindings), 21.6380);
-
-        input = "x + y - z".chars().collect();
-        root = parse_expression(&input, 0).unwrap();
-        assert_similiar!(root.evaluate(&bindings), 3.2681);
-
-        input = "x + y - z / x - y + z".chars().collect();
-        root = parse_expression(&input, 0).unwrap();
-        assert_similiar!(root.evaluate(&bindings), 1.3709);
-
-        input = "x + y - (z / x) - y + z".chars().collect();
-        root = parse_expression(&input, 0).unwrap();
-        assert_similiar!(root.evaluate(&bindings), 1.3709);
-
-        input = "3.2 ^ (0.01 / 8) + (4.0 * 3 + 2 - 3^7 - (4)) / z ^ 2"
-            .chars()
-            .collect();
-        root = parse_expression(&input, 0).unwrap();
-        assert_similiar!(root.evaluate(&bindings), -495.5297);
-    }
+    // TODO add more parse_expression tests now that the old ones moved to
+    // function_ir
 }
