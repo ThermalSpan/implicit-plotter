@@ -1,4 +1,3 @@
-
 use function::Function;
 use itertools::Itertools;
 use std::collections::HashMap;
@@ -123,6 +122,20 @@ impl Interval {
             Interval {
                 min: minmax.0,
                 max: minmax.1,
+            },
+        ]
+    }
+
+    pub fn split(&self) -> [Interval; 2] {
+        let middle = (self.min + self.max) / 2.0;
+        [
+            Interval {
+                min: self.min,
+                max: middle,
+            },
+            Interval {
+                min: middle,
+                max: self.max,
             },
         ]
     }
