@@ -4,6 +4,8 @@ use itertools::Itertools;
 use std::collections::HashMap;
 use std::io::Write;
 
+use geoprim::*;
+
 #[derive(Copy, Clone)]
 struct BoundingBox {
     x: Interval,
@@ -62,56 +64,43 @@ impl MNode {
         self.children = Some(children);
     }
 
-    pub fn write_as_plot<W: Write>(
-        &self,
-        writer: &mut W,
-    ) {
+    pub fn add_to_plot(&self, plot: &mut Plot ) {
         let bb = self.bb;
-        let lines = [
-            // Bottom face
-            (bb.x.min, bb.y.min, bb.z.min, bb.x.max, bb.y.min, bb.z.min),
 
-            (bb.x.max, bb.y.min, bb.z.min, bb.x.max, bb.y.max, bb.z.min),
+        // Build up the outline of a cube
+        //
+        // 1.) Make a point buffer with all the corners
+        let mut points = Vec::new();
+        for x in vec![bb.x.min, bb.x.max] {
+            for y in vec![bb.y.min, bb.y.max] {
+                for z in vec![bb.z.min, bb.z.max] {
+                    points.push(Point::new(x, y, z));
+                }
+            }
+        }
 
-            (bb.x.max, bb.y.max, bb.z.min, bb.x.min, bb.y.max, bb.z.min),
-
-            (bb.x.min, bb.y.max, bb.z.min, bb.x.min, bb.y.min, bb.z.min),
-
-            // Top Face,
-            (bb.x.min, bb.y.min, bb.z.max, bb.x.max, bb.y.min, bb.z.max),
-
-            (bb.x.max, bb.y.min, bb.z.max, bb.x.max, bb.y.max, bb.z.max),
-
-            (bb.x.max, bb.y.max, bb.z.max, bb.x.min, bb.y.max, bb.z.max),
-
-            (bb.x.min, bb.y.max, bb.z.max, bb.x.min, bb.y.min, bb.z.max),
-
-            // Legs
-            (bb.x.min, bb.y.min, bb.z.min, bb.x.min, bb.y.min, bb.z.max),
-
-            (bb.x.min, bb.y.max, bb.z.min, bb.x.min, bb.y.max, bb.z.max),
-
-            (bb.x.max, bb.y.max, bb.z.min, bb.x.max, bb.y.max, bb.z.max),
-
-            (bb.x.max, bb.y.min, bb.z.min, bb.x.max, bb.y.min, bb.z.max),
+        // 2.) make a line buffer with appropriate endpoints
+        let index_pairs = vec![
+            (0, 1),
+            (1, 3),
+            (3, 2),
+            (2, 0),
+            (4, 5),
+            (5, 7),
+            (7, 6),
+            (6, 4),
+            (0, 4),
+            (1, 5),
+            (3, 7),
+            (2, 6)
         ];
-
-        for l in &lines {
-            writeln!(
-                writer,
-                "<line> {} {} {} {} {} {} </line>",
-                l.0,
-                l.1,
-                l.2,
-                l.3,
-                l.4,
-                l.5
-            );
+        for (p1, p2) in index_pairs {
+            plot.add_line(LineSegment::new(points[p1], points[p2]));
         }
 
         if let Some(ref children) = self.children {
             for c in children {
-                c.write_as_plot(writer);
+                c.add_to_plot(plot);
             }
         }
     }
@@ -122,6 +111,7 @@ mod tests {
     use super::*;
     use parser::*;
     use std::fs::File;
+    use serde_json;
     /*
     #[test]
     fn write_test() {
@@ -166,10 +156,12 @@ mod tests {
         let input: Vec<char> = "x^2 + y^2 + z^2 - 0.99".chars().collect();
         let f = parse_expression(&input, 0).unwrap();
         n.split(&f);
-        // n.children.unwrap().get_mut(0).unwrap().split(&f);
+        //n.children.unwrap().get_mut(0).unwrap().split(&f);
+    
+        let mut plot = Plot::new();
+        n.add_to_plot(&mut plot);
 
         let mut file = File::create("/Users/russell/bb1.txt").unwrap();
-        n.write_as_plot(&mut file);
+        serde_json::to_writer_pretty(&mut file, &plot);
     }
-
 }
