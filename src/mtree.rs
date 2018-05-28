@@ -1,4 +1,3 @@
-
 use function::*;
 use interval::Interval;
 use itertools::Itertools;
@@ -41,7 +40,7 @@ struct MNode {
 impl MNode {
     fn split<F: Function>(
         &mut self,
-        f: F,
+        f: &Box<F>,
     ) {
         let children = self.bb
             .split()
@@ -121,8 +120,9 @@ impl MNode {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use parser::*;
     use std::fs::File;
-
+    /*
     #[test]
     fn write_test() {
         let unit_i = Interval { min: 0.0, max: 1.0 };
@@ -139,11 +139,37 @@ mod tests {
             children: None,
         };
 
-        let f = ConstFunction { c: 1.0 };
-        n.split(f);
-        n.children.unwrap()[0].split(f);
+        let f = Box::new(ConstFunction { c: 1.0 });
+        n.split(&f);
+        n.children.unwrap()[0].split(&f);
 
         let mut file = File::create("/Users/russell/bb.txt").unwrap();
         n.write_as_plot(&mut file);
     }
+*/
+    #[test]
+    fn write_test_1() {
+        let unit_i = Interval { min: 0.0, max: 1.0 };
+
+        let unit_b = BoundingBox {
+            x: unit_i.clone(),
+            y: unit_i.clone(),
+            z: unit_i.clone(),
+        };
+
+        let mut n = MNode {
+            intervals: Vec::new(),
+            bb: unit_b,
+            children: None,
+        };
+
+        let input: Vec<char> = "x^2 + y^2 + z^2 - 0.99".chars().collect();
+        let f = parse_expression(&input, 0).unwrap();
+        n.split(&f);
+        // n.children.unwrap().get_mut(0).unwrap().split(&f);
+
+        let mut file = File::create("/Users/russell/bb1.txt").unwrap();
+        n.write_as_plot(&mut file);
+    }
+
 }
