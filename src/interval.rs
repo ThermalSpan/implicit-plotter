@@ -141,7 +141,7 @@ impl Interval {
     }
 
     pub fn contains_zero(&self) -> bool {
-        self.min < 0.0 && self.max > 0.0
+        self.min <= 0.0 && self.max >= 0.0
     }
 }
 

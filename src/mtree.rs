@@ -1,5 +1,6 @@
 use function::*;
 use interval::Interval;
+use interval::contains_zero;
 use itertools::Itertools;
 use std::collections::HashMap;
 use std::io::Write;
@@ -50,8 +51,8 @@ impl MNode {
             .map(|bb| {
                 let mut bindings = HashMap::new();
                 bindings.insert('x', bb.x);
-                bindings.insert('y', bb.x);
-                bindings.insert('z', bb.x);
+                bindings.insert('y', bb.y);
+                bindings.insert('z', bb.z);
                 let intervals = f.evaluate_interval(&bindings);
                 MNode {
                     bb: bb.clone(),
@@ -62,6 +63,29 @@ impl MNode {
             .collect();
 
         self.children = Some(children);
+    }
+
+    fn contains_zero(&self) -> bool {
+        contains_zero(&self.intervals)
+    }
+
+
+    pub fn find_roots<F: Function> (&mut self, f: &Box<F>, eps: f32) {
+        let bb = self.bb.clone();
+        if (bb.x.max - bb.x.min) < eps{
+            return;
+        }
+        
+        let recur = self.contains_zero();
+        if recur {
+            self.split(f);
+
+            if let Some(children) = &mut self.children {
+                for mut child in children {
+                    child.find_roots(f, eps);
+                }
+            }
+        }
     }
 
     pub fn add_to_plot(&self, plot: &mut Plot ) {
@@ -139,23 +163,29 @@ mod tests {
 */
     #[test]
     fn write_test_1() {
-        let unit_i = Interval { min: 0.0, max: 1.0 };
+        let input: Vec<char> = "x^2 + y^2 + z^2 - 15.0".chars().collect();
+        let f = parse_expression(&input, 0).unwrap();
+
+        let unit_i = Interval { min: -20.0, max: 20.0 };
 
         let unit_b = BoundingBox {
             x: unit_i.clone(),
             y: unit_i.clone(),
             z: unit_i.clone(),
         };
+        let mut bindings = HashMap::new();
+        bindings.insert('x', unit_b.x);
+        bindings.insert('y', unit_b.y);
+        bindings.insert('z', unit_b.z);
+        let intervals = f.evaluate_interval(&bindings);
 
         let mut n = MNode {
-            intervals: Vec::new(),
+            intervals: intervals,
             bb: unit_b,
             children: None,
         };
 
-        let input: Vec<char> = "x^2 + y^2 + z^2 - 0.99".chars().collect();
-        let f = parse_expression(&input, 0).unwrap();
-        n.split(&f);
+        n.find_roots(&f, 0.2);
         //n.children.unwrap().get_mut(0).unwrap().split(&f);
     
         let mut plot = Plot::new();
@@ -163,5 +193,8 @@ mod tests {
 
         let mut file = File::create("/Users/russell/bb1.txt").unwrap();
         serde_json::to_writer_pretty(&mut file, &plot);
+
+        panic!();
     }
+
 }

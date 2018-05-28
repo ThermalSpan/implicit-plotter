@@ -173,6 +173,8 @@ mod tests {
         assert_eq!(result.len(), 1);
         assert_similiar!(result[0].min, -4.99);
         assert_similiar!(result[0].max, 8.1);
+        assert!(result[0].contains_zero());
+        assert!(contains_zero(&vec![result[0]]));
 
         input = "x*y".chars().collect();
         root = parse_expression(&input, 0).unwrap();
@@ -183,4 +185,38 @@ mod tests {
 
         // TDOD add more tests once behaivor settles
     }
+
+    fn test_function_inteval_2() {
+        let mut input: Vec<char>;
+        let mut root;
+        let mut result;
+        let mut bindings = HashMap::new();
+        bindings.insert(
+            'x',
+            Interval {
+                min: -1.0,
+                max: 1.0,
+            },
+        );
+        bindings.insert(
+            'y',
+            Interval {
+                min: -1.0,
+                max: 1.0,
+            },
+        );
+        bindings.insert(
+            'z',
+            Interval {
+                min: -1.0,
+                max: 1.0,
+            },
+        );
+
+        input = "x-y".chars().collect();
+        root = parse_expression(&input, 0).unwrap();
+        result = root.evaluate_interval(&bindings);
+        assert!(result[0].contains_zero());
+    }
+
 }
