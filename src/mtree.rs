@@ -122,6 +122,10 @@ impl MNode {
             plot.add_line(LineSegment::new(points[p1], points[p2]));
         }
 
+        if self.contains_zero() && self.children.is_none() {
+            plot.add_point(Point::new(bb.x.middle(), bb.y.middle(), bb.z.middle()));
+        }
+
         if let Some(ref children) = self.children {
             for c in children {
                 c.add_to_plot(plot);

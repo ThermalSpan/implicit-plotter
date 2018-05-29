@@ -126,8 +126,10 @@ impl Interval {
         ]
     }
 
+    pub fn middle(&self) -> f32 {(self.min + self.max) / 2.0}
+
     pub fn split(&self) -> [Interval; 2] {
-        let middle = (self.min + self.max) / 2.0;
+        let middle = self.middle();
         [
             Interval {
                 min: self.min,
