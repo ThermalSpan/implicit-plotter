@@ -10,6 +10,13 @@ pub struct Interval {
 }
 
 impl Interval {
+    pub fn new(min: f32, max: f32) -> Interval {
+        Interval {
+            min,
+            max
+        }
+    }
+
     pub fn add(
         &self,
         other: &Interval,
@@ -92,24 +99,6 @@ impl Interval {
         &self,
         power: &Interval,
     ) -> Vec<Interval> {
-        // First we need to eliminate invalid exponentiation calls
-        // That means no negative bases
-        if self.max < 0.0 {
-            return Vec::new();
-        }
-
-        if self.min < 0.0 {
-            // TODO: we should explore the consequences of this
-            // For now, only allow exponentiation on defined ranges
-            return Interval {
-                min: 0.0,
-                max: self.max,
-            }.exp(power);
-        }
-
-        // TODO: we need to improve the logic here to isolate powers in [-1, 1] and
-        // make sure they
-        // are split into the two possible options
         let minmax = [self.min, self.max]
             .iter()
             .cartesian_product(&[power.min, power.max])
@@ -120,7 +109,7 @@ impl Interval {
 
         vec![
             Interval {
-                min: minmax.0,
+                min: if self.contains_zero() { 0.0 } else { minmax.0 },
                 max: minmax.1,
             },
         ]

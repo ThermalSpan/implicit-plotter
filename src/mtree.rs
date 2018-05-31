@@ -121,6 +121,7 @@ impl MNode {
                 (3, 7),
                 (2, 6)
             ];
+
             for (p1, p2) in index_pairs {
                 plot.add_line(LineSegment::new(points[p1], points[p2]));
             }
