@@ -7,15 +7,15 @@ use std::io::Write;
 
 use geoprim::*;
 
-#[derive(Copy, Clone)]
-struct BoundingBox {
-    x: Interval,
-    y: Interval,
-    z: Interval,
+#[derive(Debug, Copy, Clone)]
+pub struct BoundingBox {
+    pub x: Interval,
+    pub y: Interval,
+    pub z: Interval,
 }
 
 impl BoundingBox {
-    fn split(&self) -> Vec<BoundingBox> {
+    pub fn split(&self) -> Vec<BoundingBox> {
         let x_is = self.x.split();
         let y_is = self.y.split();
         let z_is = self.z.split();
@@ -34,14 +34,15 @@ impl BoundingBox {
     }
 }
 
-struct MNode {
-    intervals: Vec<Interval>,
-    bb: BoundingBox,
-    children: Option<Vec<MNode>>,
+#[derive(Debug)]
+pub struct MNode {
+    pub intervals: Vec<Interval>,
+    pub bb: BoundingBox,
+    pub children: Option<Vec<MNode>>,
 }
 
 impl MNode {
-    fn split<F: Function>(
+    pub fn split<F: Function>(
         &mut self,
         f: &Box<F>,
     ) {
@@ -88,47 +89,50 @@ impl MNode {
         }
     }
 
-    pub fn add_to_plot(&self, plot: &mut Plot ) {
+    pub fn add_to_plot(&self, min_plot: bool, plot: &mut Plot ) {
         let bb = self.bb;
+        let is_min = self.contains_zero() && self.children.is_none();
 
-        // Build up the outline of a cube
-        //
-        // 1.) Make a point buffer with all the corners
-        let mut points = Vec::new();
-        for x in vec![bb.x.min, bb.x.max] {
-            for y in vec![bb.y.min, bb.y.max] {
-                for z in vec![bb.z.min, bb.z.max] {
-                    points.push(Point::new(x, y, z));
+        if (min_plot && is_min) || ! min_plot {
+            // Build up the outline of a cube
+            //
+            // 1.) Make a point buffer with all the corners
+            let mut points = Vec::new();
+            for x in vec![bb.x.min, bb.x.max] {
+                for y in vec![bb.y.min, bb.y.max] {
+                    for z in vec![bb.z.min, bb.z.max] {
+                        points.push(Point::new(x, y, z));
+                    }
                 }
+            }
+
+            // 2.) make a line buffer with appropriate endpoints
+            let index_pairs = vec![
+                (0, 1),
+                (1, 3),
+                (3, 2),
+                (2, 0),
+                (4, 5),
+                (5, 7),
+                (7, 6),
+                (6, 4),
+                (0, 4),
+                (1, 5),
+                (3, 7),
+                (2, 6)
+            ];
+            for (p1, p2) in index_pairs {
+                plot.add_line(LineSegment::new(points[p1], points[p2]));
             }
         }
 
-        // 2.) make a line buffer with appropriate endpoints
-        let index_pairs = vec![
-            (0, 1),
-            (1, 3),
-            (3, 2),
-            (2, 0),
-            (4, 5),
-            (5, 7),
-            (7, 6),
-            (6, 4),
-            (0, 4),
-            (1, 5),
-            (3, 7),
-            (2, 6)
-        ];
-        for (p1, p2) in index_pairs {
-            plot.add_line(LineSegment::new(points[p1], points[p2]));
-        }
-
-        if self.contains_zero() && self.children.is_none() {
+        if  is_min {
             plot.add_point(Point::new(bb.x.middle(), bb.y.middle(), bb.z.middle()));
         }
 
         if let Some(ref children) = self.children {
             for c in children {
-                c.add_to_plot(plot);
+                c.add_to_plot(min_plot, plot);
             }
         }
     }
@@ -167,7 +171,7 @@ mod tests {
 */
     #[test]
     fn write_test_1() {
-        let input: Vec<char> = "x^2 + y^2 + z^2 - 15.0".chars().collect();
+        let input: Vec<char> = "x^2 + y^2 + z^2 - 30.0".chars().collect();
         let f = parse_expression(&input, 0).unwrap();
 
         let unit_i = Interval { min: -20.0, max: 20.0 };

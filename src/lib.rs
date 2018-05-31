@@ -5,10 +5,11 @@ extern crate serde_json;
 #[macro_use]
 mod util;
 
-mod interval;
-mod function;
-mod function_ir;
-mod gen;
-mod parser;
-mod parser_error;
-mod mtree;
+pub mod interval;
+pub mod function;
+pub mod function_ir;
+pub mod gen;
+pub mod parser;
+pub mod parser_error;
+pub mod mtree;
+
