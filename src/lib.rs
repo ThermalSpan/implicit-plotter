@@ -12,4 +12,5 @@ pub mod gen;
 pub mod parser;
 pub mod parser_error;
 pub mod mtree;
+pub mod key;
 

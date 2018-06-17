@@ -34,6 +34,28 @@ impl BoundingBox {
     }
 }
 
+#[derive(Debug, Copy, Clone, Hash)]
+pub struct Key(pub u64);
+
+const LG2_3: f64 = 0.480_898_346_96; // 1.0 / (ln(2) * 3);
+
+impl Key {
+    pub fn root_key() -> Key {
+        Key(1)
+    }
+    
+    pub fn child_key <I: Into<u64>>(&self, child: I) -> Key {
+        let c = child.into();
+        let p = &self.0 << 3;
+        Key(p | c)
+    }
+
+    pub fn level(&self) -> usize {
+            (((self.0 as f64).log2() / 3.0).floor()) as usize
+    }
+}
+
+
 #[derive(Debug)]
 pub struct MNode {
     pub intervals: Vec<Interval>,
@@ -137,73 +159,4 @@ impl MNode {
             }
         }
     }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use parser::*;
-    use std::fs::File;
-    use serde_json;
-    /*
-    #[test]
-    fn write_test() {
-        let unit_i = Interval { min: 0.0, max: 1.0 };
-
-        let unit_b = BoundingBox {
-            x: unit_i.clone(),
-            y: unit_i.clone(),
-            z: unit_i.clone(),
-        };
-
-        let mut n = MNode {
-            intervals: Vec::new(),
-            bb: unit_b,
-            children: None,
-        };
-
-        let f = Box::new(ConstFunction { c: 1.0 });
-        n.split(&f);
-        n.children.unwrap()[0].split(&f);
-
-        let mut file = File::create("/Users/russell/bb.txt").unwrap();
-        n.write_as_plot(&mut file);
-    }
-*/
-    #[test]
-    fn write_test_1() {
-        let input: Vec<char> = "x^2 + y^2 + z^2 - 30.0".chars().collect();
-        let f = parse_expression(&input, 0).unwrap();
-
-        let unit_i = Interval { min: -20.0, max: 20.0 };
-
-        let unit_b = BoundingBox {
-            x: unit_i.clone(),
-            y: unit_i.clone(),
-            z: unit_i.clone(),
-        };
-        let mut bindings = HashMap::new();
-        bindings.insert('x', unit_b.x);
-        bindings.insert('y', unit_b.y);
-        bindings.insert('z', unit_b.z);
-        let intervals = f.evaluate_interval(&bindings);
-
-        let mut n = MNode {
-            intervals: intervals,
-            bb: unit_b,
-            children: None,
-        };
-
-        n.find_roots(&f, 0.2);
-        //n.children.unwrap().get_mut(0).unwrap().split(&f);
-    
-        let mut plot = Plot::new();
-        n.add_to_plot(&mut plot);
-
-        let mut file = File::create("/Users/russell/bb1.txt").unwrap();
-        serde_json::to_writer_pretty(&mut file, &plot);
-
-        panic!();
-    }
-
 }
