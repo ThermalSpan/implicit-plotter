@@ -1,5 +1,7 @@
 use std::iter::Iterator;
 
+const COMPONENT_BIT_COUNT: u32 = 21;
+
 const ISOLATE_COMPONENT_MASKS: [u64; 3] = [
 	0b100100100100100100100100100100100100100100100100100100100100100,
 	0b010010010010010010010010010010010010010010010010010010010010010,
@@ -8,20 +10,13 @@ const ISOLATE_COMPONENT_MASKS: [u64; 3] = [
 
 const ISOLATED_COMPONENT_SHIFTS: [u32; 3] = [ 2, 1, 0 ];
 
-const CONTRACTION_MASKS: [u64; 5] = [
-	0b000011000011000011000011000011000011000011000011000011000011,
-	0b000000001111000000001111000000001111000000001111000000001111,
-	0b000000000000000011111111000000000000000011111111,
-	0b0000000000000000111111111111111100000000000000001111111111111111,
-	0b1111111111111111
-];
-
-const DILATION_MASKS: [u64; 5] = [
-	0b000011000011000011000011000011000011000011000011000011000011,
-	0b000000001111000000001111000000001111000000001111000000001111,
-	0b000000000000000000000000000011111111000000000000000011111111,
-	0b000000000000111111111111111100000000000000001111111111111111,
-	0b1111111111111111
+const CONVERSION_MASKS: [u64; 6] = [
+	0b001001001001001001001001001001001001001001001001001001001001001,
+	0b001000011000011000011000011000011000011000011000011000011000011,
+	0b001000000001111000000001111000000001111000000001111000000001111,
+	0b000000000011111000000000000000011111111000000000000000011111111,
+	0b000000000011111000000000000000000000000000000001111111111111111,
+	0b000000000000000000000000000000000000000000111111111111111111111
 ];
 
 pub trait Key: Sized {
@@ -63,14 +58,14 @@ impl MortonKey {
 		for i in 0..5 {
 			// Since we have three dimensions, the gaps starts as 2, then doubles
 			// so 2^1, 2^2, .., 2^4
-			let gap_size = 1 << (i + 5); 
+			let gap_size = 1 << (i + 1); 
 
 			// close the gap
 			let shifted_component = component >> gap_size;
 
 			// combine original and gap shifted, then mask
 			let combined_segments = shifted_component | component;
-			component = combined_segments & CONTRACTION_MASKS[i];
+			component = combined_segments & CONVERSION_MASKS[i + 1];
 		}
 		
 		// Since root is one, this ends up looking like a part of the z (2) component
@@ -84,16 +79,15 @@ impl MortonKey {
 		component as u16
 	}
 
-	fn dilate_component(c: u16) -> u64 {
+	pub fn dilate_component(c: u32) -> u64 {
 		let mut component = c as u64;	
 		for i in 0..5 {
-			let gap_size = 1 << ( 6 - i);
-			let shifted_component = component >> gap_size;
+			let gap_size = 1 << ( 5 - i);
+			let shifted_component = component << gap_size;
 			let combined_components = shifted_component | component;
-			component = combined_components & DILATION_MASKS[i];
+			component = combined_components & CONVERSION_MASKS[4 - i];
 		}
-
-0
+		component
 	}
 
 	pub fn from_components(x: u16, y:u16, z: u16, level: usize) -> MortonKey {
@@ -132,11 +126,11 @@ mod tests {
 		assert_eq!( x, (2u32.pow(5) - 1) as u16);
 
 		k = MortonKey::root_key();
-		for i in 0..16 {
+		for i in 0..COMPONENT_BIT_COUNT {
 			k = k.child_key(4);
 		}
 		let x = k.get_component(0);
-		assert_eq!( x, (2u32.pow(16) - 1) as u16);
+		assert_eq!( x, (2u32.pow(COMPONENT_BIT_COUNT) - 1) as u16);
 	}
 
 	#[test]
@@ -149,11 +143,11 @@ mod tests {
 		assert_eq!( y, (2u32.pow(5) - 1) as u16);
 
 		k = MortonKey::root_key();
-		for i in 0..16 {
+		for i in 0..COMPONENT_BIT_COUNT {
 			k = k.child_key(2);
 		}
 		let y = k.get_component(1);
-		assert_eq!( y, (2u32.pow(16) - 1) as u16);
+		assert_eq!( y, (2u32.pow(COMPONENT_BIT_COUNT) - 1) as u16);
 	}
 	
 	#[test]
@@ -166,11 +160,11 @@ mod tests {
 		assert_eq!( z, (2u32.pow(5) - 1) as u16);
 
 		k = MortonKey::root_key();
-		for i in 0..16 {
+		for i in 0..COMPONENT_BIT_COUNT {
 			k = k.child_key(1);
 		}
 		let z = k.get_component(2);
-		assert_eq!( z, (2u32.pow(16) - 1) as u16);
+		assert_eq!( z, (2u32.pow(COMPONENT_BIT_COUNT) - 1) as u16);
 	}
 	
 	#[test]
@@ -221,6 +215,23 @@ mod tests {
 		assert_eq!( x, 0b0111011101110111);
 		assert_eq!( y, 0b1001100110011001);
 		assert_eq!( z, 0b1010101010101010);
+	}
+
+	#[test]
+	fn dilate_ones() {
+		let mut component = 0;
+		let mut expected_dilated_component = 0;
+
+		let mut dilated_component = MortonKey::dilate_component(component);
+		assert_eq!(dilated_component, expected_dilated_component, "Failed at component << 0");
+		for i in 0..COMPONENT_BIT_COUNT {
+			component = 1 | component << 1;
+			expected_dilated_component = 1 | expected_dilated_component << 3;
+
+			dilated_component = MortonKey::dilate_component(component);
+			assert_eq!(dilated_component, expected_dilated_component, "Failed at component << {}", i + 1);
+		}
+
 	}
 }
 
