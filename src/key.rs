@@ -1,4 +1,4 @@
-use std::iter::Iterator;
+use std::fmt;
 
 const COMPONENT_BIT_COUNT: u32 = 21;
 
@@ -19,16 +19,27 @@ const CONVERSION_MASKS: [u64; 6] = [
 	0b000000000000000000000000000000000000000000111111111111111111111
 ];
 
-pub trait Key: Sized {
-    fn root_key() -> Self;
-    fn child_key(&self, i: u64) -> Self;
-    fn level(&self) -> usize;
-    fn neighbor(&self, x: bool, y: bool, z: bool) -> Option<Self>;
+pub enum NeighborRelation {
+	Less,
+	Same,
+	More	
 }
 
-#[derive(Debug, Copy, Clone, Hash)]
+pub trait Key: Sized + PartialEq + Eq {
+    fn root_key() -> Self;
+    fn child_key(&self, i: u64) -> Self;
+    fn level(&self) -> u32;
+    fn neighbor_key(&self, x: NeighborRelation, y: NeighborRelation, z: NeighborRelation) -> Option<Self>;
+}
+
+#[derive(PartialEq, Eq, Copy, Clone, Hash)]
 pub struct MortonKey(pub u64);
 
+impl fmt::Debug for MortonKey {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "MortonKey({:b})", self.0)
+    }
+}
 
 impl Key for MortonKey {
     fn root_key() -> MortonKey {
@@ -40,17 +51,78 @@ impl Key for MortonKey {
         MortonKey(p | child)
     }
 
-    fn level(&self) -> usize {
-            (((self.0 as f64).log2() / 3.0).floor()) as usize
+    fn level(&self) -> u32 {
+            (((self.0 as f64).log2() / 3.0).floor()) as u32
     }
 
-    fn neighbor(&self, x: bool, y: bool, z: bool) -> Option<MortonKey> {
-        None
+    fn neighbor_key(&self, x_rel: NeighborRelation, y_rel: NeighborRelation, z_rel: NeighborRelation) -> Option<MortonKey> {
+		let level = self.level();
+		let mut x = self.get_component(0);
+		let mut y = self.get_component(1);
+		let mut z = self.get_component(2);
+
+		let x_one_count = x.count_ones(); 
+		let y_one_count = y.count_ones();
+		let z_one_count = z.count_ones();
+
+		let mut overflow = false;
+		match x_rel {
+			NeighborRelation::Less => {
+				let (new_x, new_overflow) =  x.overflowing_sub(1);
+				x = new_x;
+				overflow = new_overflow;
+			},
+			NeighborRelation::More if x_one_count < level => {
+				x += 1;
+				println!("Adding one to x: {}", x);
+			},
+			NeighborRelation::More => {
+				println!("Overflow x: {}, level: {}", x, level);
+				overflow = true;
+			}
+			NeighborRelation::Same => ()
+		}
+
+		match y_rel {
+			NeighborRelation::Less => {
+				let (new_y, new_overflow) =  y.overflowing_sub(1);
+				y = new_y;
+				overflow = new_overflow;
+			},
+			NeighborRelation::More if y_one_count < level => {
+				y += 1;
+			},
+			NeighborRelation::More => {
+				overflow = true;
+			}
+			NeighborRelation::Same => ()
+		}
+
+		match z_rel {
+			NeighborRelation::Less => {
+				let (new_z, new_overflow) =  z.overflowing_sub(1);
+				z = new_z;
+				overflow = new_overflow;
+			},
+			NeighborRelation::More if z_one_count < level => {
+				z += 1;
+			},
+			NeighborRelation::More => {
+				overflow = true;
+			}
+			NeighborRelation::Same => ()
+		}		
+	
+		if overflow {
+			None
+		} else {
+			Some(MortonKey::from_components(x, y, z, level))
+		}
     }
 }
 
 impl MortonKey {
-	fn get_component(&self, component: usize) -> u16 {
+	fn get_component(&self, component: usize) -> u32 {
 		let shifted_dilated_component = &self.0 & ISOLATE_COMPONENT_MASKS[component];
 		let dilated_component = shifted_dilated_component >> ISOLATED_COMPONENT_SHIFTS[component];
 		
@@ -76,7 +148,7 @@ impl MortonKey {
 		component &= length_mask;
 
 		// This is a type safety thing, since component can be at most 16 bits 
-		component as u16
+		component as u32
 	}
 
 	pub fn dilate_component(c: u32) -> u64 {
@@ -90,8 +162,18 @@ impl MortonKey {
 		component
 	}
 
-	pub fn from_components(x: u16, y:u16, z: u16, level: usize) -> MortonKey {
-		MortonKey::root_key()	
+	pub fn from_components(x: u32, y:u32, z: u32, level: u32) -> MortonKey {
+		let dilated_x = MortonKey::dilate_component(x) << 2;
+		let dilated_y = MortonKey::dilate_component(y) << 1;	
+		let dilated_z = MortonKey::dilate_component(z);
+		let root = 1 << level * 3;
+		
+		let mut key = root;
+		key |= dilated_x;
+		key |= dilated_y;
+		key |= dilated_z;
+
+		MortonKey(key)
 	}
 }
 
@@ -112,7 +194,7 @@ mod tests {
 		assert_eq!(k.level(), 0);
 		for i in 0..16 {
 			k = k.child_key(i % 8);
-			assert_eq!(k.level(), (i + 1) as usize);
+			assert_eq!(k.level(), (i + 1) as u32);
 		}
 	}
 	
@@ -123,14 +205,14 @@ mod tests {
 			k = k.child_key(4);
 		}
 		let x = k.get_component(0);
-		assert_eq!( x, (2u32.pow(5) - 1) as u16);
+		assert_eq!( x, (2u32.pow(5) - 1) as u32);
 
 		k = MortonKey::root_key();
 		for i in 0..COMPONENT_BIT_COUNT {
 			k = k.child_key(4);
 		}
 		let x = k.get_component(0);
-		assert_eq!( x, (2u32.pow(COMPONENT_BIT_COUNT) - 1) as u16);
+		assert_eq!( x, (2u32.pow(COMPONENT_BIT_COUNT) - 1) as u32);
 	}
 
 	#[test]
@@ -140,14 +222,14 @@ mod tests {
 			k = k.child_key(2);
 		}
 		let y = k.get_component(1);
-		assert_eq!( y, (2u32.pow(5) - 1) as u16);
+		assert_eq!( y, (2u32.pow(5) - 1) as u32);
 
 		k = MortonKey::root_key();
 		for i in 0..COMPONENT_BIT_COUNT {
 			k = k.child_key(2);
 		}
 		let y = k.get_component(1);
-		assert_eq!( y, (2u32.pow(COMPONENT_BIT_COUNT) - 1) as u16);
+		assert_eq!( y, (2u32.pow(COMPONENT_BIT_COUNT) - 1) as u32);
 	}
 	
 	#[test]
@@ -157,14 +239,14 @@ mod tests {
 			k = k.child_key(1);
 		}
 		let z = k.get_component(2);
-		assert_eq!( z, (2u32.pow(5) - 1) as u16);
+		assert_eq!( z, (2u32.pow(5) - 1) as u32);
 
 		k = MortonKey::root_key();
 		for i in 0..COMPONENT_BIT_COUNT {
 			k = k.child_key(1);
 		}
 		let z = k.get_component(2);
-		assert_eq!( z, (2u32.pow(COMPONENT_BIT_COUNT) - 1) as u16);
+		assert_eq!( z, (2u32.pow(COMPONENT_BIT_COUNT) - 1) as u32);
 	}
 	
 	#[test]
@@ -176,9 +258,9 @@ mod tests {
 		let x = k.get_component(0);
 		let y = k.get_component(1);
 		let z = k.get_component(2);
-		assert_eq!( x, (2u32.pow(7) - 1) as u16);
-		assert_eq!( y, (2u32.pow(7) - 1) as u16);
-		assert_eq!( z, (2u32.pow(7) - 1) as u16);
+		assert_eq!( x, (2u32.pow(7) - 1) as u32);
+		assert_eq!( y, (2u32.pow(7) - 1) as u32);
+		assert_eq!( z, (2u32.pow(7) - 1) as u32);
 
 		k = MortonKey::root_key();
 		for i in 0..16 {
@@ -187,9 +269,9 @@ mod tests {
 		let x = k.get_component(0);
 		let y = k.get_component(1);
 		let z = k.get_component(2);
-		assert_eq!( x, (2u32.pow(16) - 1) as u16);
-		assert_eq!( y, (2u32.pow(16) - 1) as u16);
-		assert_eq!( z, (2u32.pow(16) - 1) as u16);
+		assert_eq!( x, (2u32.pow(16) - 1) as u32);
+		assert_eq!( y, (2u32.pow(16) - 1) as u32);
+		assert_eq!( z, (2u32.pow(16) - 1) as u32);
 	}
 
 	#[test]
@@ -231,7 +313,69 @@ mod tests {
 			dilated_component = MortonKey::dilate_component(component);
 			assert_eq!(dilated_component, expected_dilated_component, "Failed at component << {}", i + 1);
 		}
+	}
 
+	#[test]
+	fn from_components() {
+		let x = 0;
+		let y = 0;
+		let z = 0;
+		let level = 0;
+		
+		let key = MortonKey::from_components(x, y, z, level);
+		assert_eq!(key, MortonKey::root_key());
+
+		let x = 0b1101010;
+		let y = 0b0011010;
+		let z = 0b0101011;
+		let level = 7;
+
+		let key = MortonKey::from_components(x, y, z, level);
+		assert_eq!(key.0, 0b1100101010111000111001);
+	}
+
+	#[test]
+	fn get_root_neighbors() {
+		let mut key = MortonKey::root_key();
+		
+		// All same returns self	
+		assert_eq!(key.neighbor_key(NeighborRelation::Same,	NeighborRelation::Same,	NeighborRelation::Same), Some(MortonKey::root_key()));
+	
+		// Root overlfows for x
+		assert_eq!(key.neighbor_key(NeighborRelation::Less,	NeighborRelation::Same,	NeighborRelation::Same), None);
+		assert_eq!(key.neighbor_key(NeighborRelation::More,	NeighborRelation::Same,	NeighborRelation::Same), None);
+		// Root overflows for y
+		assert_eq!(key.neighbor_key(NeighborRelation::Same,	NeighborRelation::Less,	NeighborRelation::Same), None);
+		assert_eq!(key.neighbor_key(NeighborRelation::Same,	NeighborRelation::More,	NeighborRelation::Same), None);
+		// Root overflows for z
+		assert_eq!(key.neighbor_key(NeighborRelation::Same,	NeighborRelation::Same,	NeighborRelation::Less), None);
+		assert_eq!(key.neighbor_key(NeighborRelation::Same,	NeighborRelation::Same,	NeighborRelation::More), None);
+
+		// Misc
+		assert_eq!(key.neighbor_key(NeighborRelation::Less,	NeighborRelation::More,	NeighborRelation::Less), None);
+		assert_eq!(key.neighbor_key(NeighborRelation::More,	NeighborRelation::More,	NeighborRelation::More), None);
+	}
+
+	#[test]
+	fn get_neighbors() {
+		let root = MortonKey::root_key();
+
+		let mut child = root.child_key(0);
+		assert_eq!(child.0, 0b1000);
+		assert_eq!(child.neighbor_key(NeighborRelation::Same, NeighborRelation::Same, NeighborRelation::Same), Some(MortonKey(0b1000)));
+		assert_eq!(child.neighbor_key(NeighborRelation::More, NeighborRelation::More, NeighborRelation::Same), Some(MortonKey(0b1110)));
+		assert_eq!(child.neighbor_key(NeighborRelation::Less, NeighborRelation::More, NeighborRelation::Same), None); 
+
+		child = root.child_key(7);
+		assert_eq!(child.0, 0b1111);
+		assert_eq!(child.neighbor_key(NeighborRelation::Same, NeighborRelation::Same, NeighborRelation::Same), Some(MortonKey(0b1111)));
+		assert_eq!(child.neighbor_key(NeighborRelation::More, NeighborRelation::More, NeighborRelation::Same), None);
+		assert_eq!(child.neighbor_key(NeighborRelation::Less, NeighborRelation::More, NeighborRelation::Same), None); 
+		assert_eq!(child.neighbor_key(NeighborRelation::Same, NeighborRelation::Same, NeighborRelation::Less), Some(MortonKey(0b1110)));
+
+		child = MortonKey(0b1111000111000111000111000);
+		assert_eq!(child.neighbor_key(NeighborRelation::Less, NeighborRelation::Less, NeighborRelation::Less), Some(MortonKey(0b1111000111000111000000111)));
+		assert_eq!(child.neighbor_key(NeighborRelation::More, NeighborRelation::More, NeighborRelation::More), Some(MortonKey(0b1111000111000111000111111)));
 	}
 }
 
