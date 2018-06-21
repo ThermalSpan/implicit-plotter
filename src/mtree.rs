@@ -4,7 +4,6 @@ use interval::contains_zero;
 use itertools::Itertools;
 use std::collections::HashMap;
 use std::io::Write;
-
 use geoprim::*;
 
 #[derive(Debug, Copy, Clone)]
@@ -33,28 +32,6 @@ impl BoundingBox {
             .collect()
     }
 }
-
-#[derive(Debug, Copy, Clone, Hash)]
-pub struct Key(pub u64);
-
-const LG2_3: f64 = 0.480_898_346_96; // 1.0 / (ln(2) * 3);
-
-impl Key {
-    pub fn root_key() -> Key {
-        Key(1)
-    }
-    
-    pub fn child_key <I: Into<u64>>(&self, child: I) -> Key {
-        let c = child.into();
-        let p = &self.0 << 3;
-        Key(p | c)
-    }
-
-    pub fn level(&self) -> usize {
-            (((self.0 as f64).log2() / 3.0).floor()) as usize
-    }
-}
-
 
 #[derive(Debug)]
 pub struct MNode {
@@ -91,7 +68,6 @@ impl MNode {
     fn contains_zero(&self) -> bool {
         contains_zero(&self.intervals)
     }
-
 
     pub fn find_roots<F: Function> (&mut self, f: &Box<F>, eps: f32) {
         let bb = self.bb.clone();

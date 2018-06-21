@@ -1,6 +1,7 @@
 use std::fmt;
+use std::hash::Hash;
 
-const COMPONENT_BIT_COUNT: u32 = 21;
+pub const COMPONENT_BIT_COUNT: u32 = 21;
 
 const ISOLATE_COMPONENT_MASKS: [u64; 3] = [
 	0b100100100100100100100100100100100100100100100100100100100100100,
@@ -25,7 +26,7 @@ pub enum NeighborRelation {
 	More	
 }
 
-pub trait Key: Sized + PartialEq + Eq {
+pub trait Key: Hash + Sized + PartialEq + Eq {
     fn root_key() -> Self;
     fn child_key(&self, i: u64) -> Self;
     fn level(&self) -> u32;

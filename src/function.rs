@@ -1,7 +1,7 @@
 use interval::Interval;
 use std::collections::HashMap;
 
-pub trait Function {
+pub trait Function: Sized {
     fn evaluate(
         &self,
         x: f32,
