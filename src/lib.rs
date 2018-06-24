@@ -1,6 +1,7 @@
 extern crate itertools;
 extern crate geoprim;
 extern crate serde_json;
+extern crate cgmath;
 
 #[macro_use]
 mod util;

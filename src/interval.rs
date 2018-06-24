@@ -134,6 +134,16 @@ impl Interval {
     pub fn contains_zero(&self) -> bool {
         self.min <= 0.0 && self.max >= 0.0
     }
+
+    pub fn clamp_value(&self, v: f32) -> f32 {
+        if v > self.max {
+            self.max
+        } else if v < self.min {
+            self.min
+        } else {
+            v
+        }
+    }
 }
 
 pub fn permute_intervals<A, F>(

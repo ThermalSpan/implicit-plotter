@@ -1,5 +1,6 @@
 use std::fmt;
 use std::hash::Hash;
+use itertools::Itertools;
 
 pub const COMPONENT_BIT_COUNT: u32 = 21;
 
@@ -20,20 +21,21 @@ const CONVERSION_MASKS: [u64; 6] = [
 	0b000000000000000000000000000000000000000000111111111111111111111
 ];
 
+#[derive(Copy, Clone)]
 pub enum NeighborRelation {
 	Less,
 	Same,
 	More	
 }
 
-pub trait Key: Hash + Sized + PartialEq + Eq {
+pub trait Key: Hash + Sized + Copy + Clone + PartialEq + Eq {
     fn root_key() -> Self;
     fn child_key(&self, i: u64) -> Self;
     fn level(&self) -> u32;
     fn neighbor_key(&self, x: NeighborRelation, y: NeighborRelation, z: NeighborRelation) -> Option<Self>;
 }
 
-#[derive(PartialEq, Eq, Copy, Clone, Hash)]
+#[derive(PartialEq, Eq, PartialOrd, Ord, Copy, Clone, Hash)]
 pub struct MortonKey(pub u64);
 
 impl fmt::Debug for MortonKey {
@@ -75,10 +77,8 @@ impl Key for MortonKey {
 			},
 			NeighborRelation::More if x_one_count < level => {
 				x += 1;
-				println!("Adding one to x: {}", x);
 			},
 			NeighborRelation::More => {
-				println!("Overflow x: {}, level: {}", x, level);
 				overflow = true;
 			}
 			NeighborRelation::Same => ()
@@ -120,9 +120,23 @@ impl Key for MortonKey {
 			Some(MortonKey::from_components(x, y, z, level))
 		}
     }
+
+
 }
 
 impl MortonKey {
+    pub fn neighbors(&self) -> Vec<MortonKey> {
+        let pos = [NeighborRelation::Same, NeighborRelation::Less, NeighborRelation::More];
+        pos.iter()
+            .cartesian_product(pos.iter())
+            .cartesian_product(pos.iter())
+            .skip(1)
+            .map(|((x, y), z)| self.neighbor_key(x.clone(), y.clone(), z.clone()))
+            .filter(|x| x.is_some())
+            .map(|k| k.unwrap())
+            .collect()
+    }
+
 	fn get_component(&self, component: usize) -> u32 {
 		let shifted_dilated_component = &self.0 & ISOLATE_COMPONENT_MASKS[component];
 		let dilated_component = shifted_dilated_component >> ISOLATED_COMPONENT_SHIFTS[component];
