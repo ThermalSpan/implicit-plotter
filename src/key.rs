@@ -21,7 +21,7 @@ const CONVERSION_MASKS: [u64; 6] = [
 	0b000000000000000000000000000000000000000000111111111111111111111
 ];
 
-#[derive(Copy, Clone)]
+#[derive(Debug, Copy, Clone)]
 pub enum NeighborRelation {
 	Less,
 	Same,
@@ -70,10 +70,11 @@ impl Key for MortonKey {
 
 		let mut overflow = false;
 		match x_rel {
-			NeighborRelation::Less => {
-				let (new_x, new_overflow) =  x.overflowing_sub(1);
-				x = new_x;
-				overflow = new_overflow;
+			NeighborRelation::Less if x == 0 => {
+				overflow = true;
+			},
+            NeighborRelation::Less => {
+                x -= 1;
 			},
 			NeighborRelation::More if x_one_count < level => {
 				x += 1;
@@ -85,10 +86,11 @@ impl Key for MortonKey {
 		}
 
 		match y_rel {
+			NeighborRelation::Less if y == 0 => {
+                overflow = true;
+			},
 			NeighborRelation::Less => {
-				let (new_y, new_overflow) =  y.overflowing_sub(1);
-				y = new_y;
-				overflow = new_overflow;
+                y -= 1;
 			},
 			NeighborRelation::More if y_one_count < level => {
 				y += 1;
@@ -100,11 +102,12 @@ impl Key for MortonKey {
 		}
 
 		match z_rel {
-			NeighborRelation::Less => {
-				let (new_z, new_overflow) =  z.overflowing_sub(1);
-				z = new_z;
-				overflow = new_overflow;
+			NeighborRelation::Less if z == 0 => {
+                overflow = true;
 			},
+            NeighborRelation::Less => {
+                z -= 1;
+            }
 			NeighborRelation::More if z_one_count < level => {
 				z += 1;
 			},
@@ -137,7 +140,7 @@ impl MortonKey {
             .collect()
     }
 
-	fn get_component(&self, component: usize) -> u32 {
+	pub fn get_component(&self, component: usize) -> u32 {
 		let shifted_dilated_component = &self.0 & ISOLATE_COMPONENT_MASKS[component];
 		let dilated_component = shifted_dilated_component >> ISOLATED_COMPONENT_SHIFTS[component];
 		

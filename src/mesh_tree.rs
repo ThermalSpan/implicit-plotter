@@ -221,7 +221,7 @@ impl  <F: Function> MeshTree<key::MortonKey, F> {
                 let c2 = &self.vertex_map.get(key2).unwrap();
 
                 let p1 = Point {
-                    x: c1.x, y: c1.y, z: c2.z
+                    x: c1.x, y: c1.y, z: c1.z
                 };
 
                 let p2 = Point {
@@ -233,5 +233,3 @@ impl  <F: Function> MeshTree<key::MortonKey, F> {
         }
     }
 }
-
-
