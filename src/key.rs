@@ -23,16 +23,53 @@ const CONVERSION_MASKS: [u64; 6] = [
 
 #[derive(Debug, Copy, Clone)]
 pub enum NeighborRelation {
-	Less,
-	Same,
-	More	
+	Less = -1,
+	Same = 0,
+	More = 1	
+}
+
+const NeighborRelations: [NeighborRelation; 3] = [NeighborRelation::Same, NeighborRelation::Less, NeighborRelation::More];
+
+const ComponentNeighbors: [Neighbor; 6] = [
+    Neighbor { x: NeighborRelation::Same, y: NeighborRelation::Same, z: NeighborRelation::Less},
+    Neighbor { x: NeighborRelation::Same, y: NeighborRelation::Same, z: NeighborRelation::More},
+    Neighbor { x: NeighborRelation::Same, y: NeighborRelation::Less, z: NeighborRelation::Same},
+    Neighbor { x: NeighborRelation::Same, y: NeighborRelation::More, z: NeighborRelation::Same},
+    Neighbor { x: NeighborRelation::Less, y: NeighborRelation::Same, z: NeighborRelation::Same},
+    Neighbor { x: NeighborRelation::More, y: NeighborRelation::Same, z: NeighborRelation::Same}
+];
+
+#[derive(Debug, Copy, Clone)]
+pub struct Neighbor {
+    x: NeighborRelation,
+    y: NeighborRelation,
+    z: NeighborRelation
+}
+
+impl Neighbor {
+    pub fn from_components(x: NeighborRelation, y: NeighborRelation, z: NeighborRelation) -> Neighbor {
+        Neighbor { x, y, z}
+    }
+
+    pub fn all_neighbors() -> impl Iterator<Item = Neighbor> {
+        NeighborRelations.iter()
+            .cartesian_product(NeighborRelations.iter())
+            .cartesian_product(NeighborRelations.iter())
+            .skip(1) // The First is Same, Same, Same which is the identity, not a neighbor
+            .map(|((x, y), z)| Neighbor {x: x.clone(), y: y.clone(), z: z.clone()})
+    }
+
+    pub fn component_neighbors() -> impl Iterator<Item = Neighbor> {
+        ComponentNeighbors.iter()
+            .map(|neighbor| neighbor.clone())
+    }
 }
 
 pub trait Key: Hash + Sized + Copy + Clone + PartialEq + Eq {
     fn root_key() -> Self;
     fn child_key(&self, i: u64) -> Self;
     fn level(&self) -> u32;
-    fn neighbor_key(&self, x: NeighborRelation, y: NeighborRelation, z: NeighborRelation) -> Option<Self>;
+    fn neighbor_key(&self, Neighbor) -> Option<Self>;
 }
 
 #[derive(PartialEq, Eq, PartialOrd, Ord, Copy, Clone, Hash)]
@@ -55,10 +92,10 @@ impl Key for MortonKey {
     }
 
     fn level(&self) -> u32 {
-            (((self.0 as f64).log2() / 3.0).floor()) as u32
+        (((self.0 as f64).log2() / 3.0).floor()) as u32
     }
 
-    fn neighbor_key(&self, x_rel: NeighborRelation, y_rel: NeighborRelation, z_rel: NeighborRelation) -> Option<MortonKey> {
+    fn neighbor_key(&self, neighbor: Neighbor) -> Option<MortonKey> {
 		let level = self.level();
 		let mut x = self.get_component(0);
 		let mut y = self.get_component(1);
@@ -69,7 +106,7 @@ impl Key for MortonKey {
 		let z_one_count = z.count_ones();
 
 		let mut overflow = false;
-		match x_rel {
+		match neighbor.x {
 			NeighborRelation::Less if x == 0 => {
 				overflow = true;
 			},
@@ -85,7 +122,7 @@ impl Key for MortonKey {
 			NeighborRelation::Same => ()
 		}
 
-		match y_rel {
+		match neighbor.y {
 			NeighborRelation::Less if y == 0 => {
                 overflow = true;
 			},
@@ -101,7 +138,7 @@ impl Key for MortonKey {
 			NeighborRelation::Same => ()
 		}
 
-		match z_rel {
+		match neighbor.z {
 			NeighborRelation::Less if z == 0 => {
                 overflow = true;
 			},
@@ -128,16 +165,18 @@ impl Key for MortonKey {
 }
 
 impl MortonKey {
-    pub fn neighbors(&self) -> Vec<MortonKey> {
-        let pos = [NeighborRelation::Same, NeighborRelation::Less, NeighborRelation::More];
-        pos.iter()
-            .cartesian_product(pos.iter())
-            .cartesian_product(pos.iter())
-            .skip(1)
-            .map(|((x, y), z)| self.neighbor_key(x.clone(), y.clone(), z.clone()))
-            .filter(|x| x.is_some())
-            .map(|k| k.unwrap())
-            .collect()
+    pub fn  neighbors (self) -> impl Iterator<Item = MortonKey> {
+        Neighbor::all_neighbors() 
+            .map(move |neighbor| self.neighbor_key(neighbor))
+            .filter(|maybe_key| maybe_key.is_some())
+            .map(|maybe_key| maybe_key.unwrap())
+    }
+
+    pub fn component_neighbors(self) -> impl Iterator<Item = MortonKey> {
+        Neighbor::component_neighbors() 
+            .map(move |neighbor| self.neighbor_key(neighbor))
+            .filter(|maybe_key| maybe_key.is_some())
+            .map(|maybe_key| maybe_key.unwrap())
     }
 
 	pub fn get_component(&self, component: usize) -> u32 {

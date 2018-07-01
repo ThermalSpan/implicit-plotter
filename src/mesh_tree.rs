@@ -165,8 +165,9 @@ impl  <F: Function> MeshTree<key::MortonKey, F> {
     pub fn generate_edge_set(&mut self) {
         let key_set: HashSet<key::MortonKey> = HashSet::from_iter(self.solution_map.keys().map(|k| k.clone()));
         for key in &key_set {
-            key.neighbors().iter()
-                .filter(|&n_k| n_k > &key && key_set.contains(n_k))
+            key.clone()
+                .component_neighbors()
+                .filter(|n_k| n_k > key && key_set.contains(n_k))
                 .for_each(|n_k| {self.edge_set.insert((key.clone(), n_k.clone()));})
         }
     }
@@ -174,7 +175,7 @@ impl  <F: Function> MeshTree<key::MortonKey, F> {
     pub fn relax_vertices(&mut self) {
         let mut new_vertex_map = HashMap::new();
         for (key, vertex) in &self.vertex_map {
-            let neighbors: Vec<key::MortonKey> = key.neighbors();
+            let neighbors: Vec<key::MortonKey> = key.clone().component_neighbors().collect();
 
             let mut sum = Vector3::new(0.0, 0.0, 0.0);
             let mut count = 0;
