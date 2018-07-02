@@ -434,81 +434,81 @@ mod tests {
 
         // All same returns self
         assert_eq!(
-            key.neighbor_key(
-                NeighborRelation::Same,
-                NeighborRelation::Same,
-                NeighborRelation::Same
-            ),
+            key.neighbor_key(Neighbor {
+                x: NeighborRelation::Same,
+                y: NeighborRelation::Same,
+                z: NeighborRelation::Same
+            }),
             Some(MortonKey::root_key())
         );
 
         // Root overlfows for x
         assert_eq!(
-            key.neighbor_key(
-                NeighborRelation::Less,
-                NeighborRelation::Same,
-                NeighborRelation::Same
-            ),
+            key.neighbor_key(Neighbor {
+                x: NeighborRelation::Less,
+                y: NeighborRelation::Same,
+                z: NeighborRelation::Same
+            }),
             None
         );
         assert_eq!(
-            key.neighbor_key(
-                NeighborRelation::More,
-                NeighborRelation::Same,
-                NeighborRelation::Same
-            ),
+            key.neighbor_key(Neighbor {
+                x: NeighborRelation::More,
+                y: NeighborRelation::Same,
+                z: NeighborRelation::Same
+            }),
             None
         );
         // Root overflows for y
         assert_eq!(
-            key.neighbor_key(
-                NeighborRelation::Same,
-                NeighborRelation::Less,
-                NeighborRelation::Same
-            ),
+            key.neighbor_key(Neighbor {
+                x: NeighborRelation::Same,
+                y: NeighborRelation::Less,
+                z: NeighborRelation::Same
+            }),
             None
         );
         assert_eq!(
-            key.neighbor_key(
-                NeighborRelation::Same,
-                NeighborRelation::More,
-                NeighborRelation::Same
-            ),
+            key.neighbor_key(Neighbor {
+                x: NeighborRelation::Same,
+                y: NeighborRelation::More,
+                z: NeighborRelation::Same
+            }),
             None
         );
         // Root overflows for z
         assert_eq!(
-            key.neighbor_key(
-                NeighborRelation::Same,
-                NeighborRelation::Same,
-                NeighborRelation::Less
-            ),
+            key.neighbor_key(Neighbor {
+                x: NeighborRelation::Same,
+                y: NeighborRelation::Same,
+                z: NeighborRelation::Less
+            }),
             None
         );
         assert_eq!(
-            key.neighbor_key(
-                NeighborRelation::Same,
-                NeighborRelation::Same,
-                NeighborRelation::More
-            ),
+            key.neighbor_key(Neighbor {
+                x: NeighborRelation::Same,
+                y: NeighborRelation::Same,
+                z: NeighborRelation::More
+            }),
             None
         );
 
         // Misc
         assert_eq!(
-            key.neighbor_key(
-                NeighborRelation::Less,
-                NeighborRelation::More,
-                NeighborRelation::Less
-            ),
+            key.neighbor_key(Neighbor {
+                x: NeighborRelation::Less,
+                y: NeighborRelation::More,
+                z: NeighborRelation::Less
+            }),
             None
         );
         assert_eq!(
-            key.neighbor_key(
-                NeighborRelation::More,
-                NeighborRelation::More,
-                NeighborRelation::More
-            ),
+            key.neighbor_key(Neighbor {
+                x: NeighborRelation::More,
+                y: NeighborRelation::More,
+                z: NeighborRelation::More
+            }),
             None
         );
     }
@@ -520,80 +520,80 @@ mod tests {
         let mut child = root.child_key(0);
         assert_eq!(child.0, 0b1000);
         assert_eq!(
-            child.neighbor_key(
-                NeighborRelation::Same,
-                NeighborRelation::Same,
-                NeighborRelation::Same
-            ),
+            child.neighbor_key(Neighbor {
+                x: NeighborRelation::Same,
+                y: NeighborRelation::Same,
+                z: NeighborRelation::Same
+            }),
             Some(MortonKey(0b1000))
         );
         assert_eq!(
-            child.neighbor_key(
-                NeighborRelation::More,
-                NeighborRelation::More,
-                NeighborRelation::Same
-            ),
+            child.neighbor_key(Neighbor {
+                x: NeighborRelation::More,
+                y: NeighborRelation::More,
+                z: NeighborRelation::Same
+            }),
             Some(MortonKey(0b1110))
         );
         assert_eq!(
-            child.neighbor_key(
-                NeighborRelation::Less,
-                NeighborRelation::More,
-                NeighborRelation::Same
-            ),
+            child.neighbor_key(Neighbor {
+                x: NeighborRelation::Less,
+                y: NeighborRelation::More,
+                z: NeighborRelation::Same
+            }),
             None
         );
 
         child = root.child_key(7);
         assert_eq!(child.0, 0b1111);
         assert_eq!(
-            child.neighbor_key(
-                NeighborRelation::Same,
-                NeighborRelation::Same,
-                NeighborRelation::Same
-            ),
+            child.neighbor_key(Neighbor {
+                x: NeighborRelation::Same,
+                y: NeighborRelation::Same,
+                z: NeighborRelation::Same
+            }),
             Some(MortonKey(0b1111))
         );
         assert_eq!(
-            child.neighbor_key(
-                NeighborRelation::More,
-                NeighborRelation::More,
-                NeighborRelation::Same
-            ),
+            child.neighbor_key(Neighbor {
+                x: NeighborRelation::More,
+                y: NeighborRelation::More,
+                z: NeighborRelation::Same
+            }),
             None
         );
         assert_eq!(
-            child.neighbor_key(
-                NeighborRelation::Less,
-                NeighborRelation::More,
-                NeighborRelation::Same
-            ),
+            child.neighbor_key(Neighbor {
+                x: NeighborRelation::Less,
+                y: NeighborRelation::More,
+                z: NeighborRelation::Same
+            }),
             None
         );
         assert_eq!(
-            child.neighbor_key(
-                NeighborRelation::Same,
-                NeighborRelation::Same,
-                NeighborRelation::Less
-            ),
+            child.neighbor_key(Neighbor {
+                x: NeighborRelation::Same,
+                y: NeighborRelation::Same,
+                z: NeighborRelation::Less
+            }),
             Some(MortonKey(0b1110))
         );
 
         child = MortonKey(0b1111000111000111000111000);
         assert_eq!(
-            child.neighbor_key(
-                NeighborRelation::Less,
-                NeighborRelation::Less,
-                NeighborRelation::Less
-            ),
+            child.neighbor_key(Neighbor {
+                x: NeighborRelation::Less,
+                y: NeighborRelation::Less,
+                z: NeighborRelation::Less
+            }),
             Some(MortonKey(0b1111000111000111000000111))
         );
         assert_eq!(
-            child.neighbor_key(
-                NeighborRelation::More,
-                NeighborRelation::More,
-                NeighborRelation::More
-            ),
+            child.neighbor_key(Neighbor {
+                x: NeighborRelation::More,
+                y: NeighborRelation::More,
+                z: NeighborRelation::More
+            }),
             Some(MortonKey(0b1111000111000111000111111))
         );
     }
