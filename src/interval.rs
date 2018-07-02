@@ -11,40 +11,24 @@ pub struct Interval {
 
 impl Interval {
     pub fn new(min: f32, max: f32) -> Interval {
-        Interval {
-            min,
-            max
-        }
+        Interval { min, max }
     }
 
-    pub fn add(
-        &self,
-        other: &Interval,
-    ) -> Vec<Interval> {
-        vec![
-            Interval {
-                min: self.min + other.min,
-                max: self.max + other.max,
-            },
-        ]
+    pub fn add(&self, other: &Interval) -> Vec<Interval> {
+        vec![Interval {
+            min: self.min + other.min,
+            max: self.max + other.max,
+        }]
     }
 
-    pub fn sub(
-        &self,
-        other: &Interval,
-    ) -> Vec<Interval> {
-        vec![
-            Interval {
-                min: self.min - other.min,
-                max: self.max - other.max,
-            },
-        ]
+    pub fn sub(&self, other: &Interval) -> Vec<Interval> {
+        vec![Interval {
+            min: self.min - other.min,
+            max: self.max - other.max,
+        }]
     }
 
-    pub fn mul(
-        &self,
-        other: &Interval,
-    ) -> Vec<Interval> {
+    pub fn mul(&self, other: &Interval) -> Vec<Interval> {
         let minmax = [self.min, self.max]
             .iter()
             .cartesian_product(&[other.min, other.max])
@@ -53,52 +37,36 @@ impl Interval {
             .into_option()
             .unwrap();
 
-        vec![
-            Interval {
-                min: minmax.0,
-                max: minmax.1,
-            },
-        ]
+        vec![Interval {
+            min: minmax.0,
+            max: minmax.1,
+        }]
     }
 
-    pub fn div(
-        &self,
-        other: &Interval,
-    ) -> Vec<Interval> {
+    pub fn div(&self, other: &Interval) -> Vec<Interval> {
         let inverse = match (other.min, other.max) {
-            (_, _) if !other.contains_zero() => {
-                Interval {
-                    min: 1.0 / other.min,
-                    max: 1.0 / other.max,
-                }
+            (_, _) if !other.contains_zero() => Interval {
+                min: 1.0 / other.min,
+                max: 1.0 / other.max,
             },
-            (min, max) if max == 0.0 => {
-                Interval {
-                    min: -f32::INFINITY,
-                    max: 1.0 / min,
-                }
+            (min, max) if max == 0.0 => Interval {
+                min: -f32::INFINITY,
+                max: 1.0 / min,
             },
-            (min, max) if min == 0.0 => {
-                Interval {
-                    min: 1.0 / max,
-                    max: f32::INFINITY,
-                }
+            (min, max) if min == 0.0 => Interval {
+                min: 1.0 / max,
+                max: f32::INFINITY,
             },
-            (min, max) => {
-                Interval {
-                    min: -f32::INFINITY,
-                    max: f32::INFINITY,
-                }
+            (min, max) => Interval {
+                min: -f32::INFINITY,
+                max: f32::INFINITY,
             },
         };
 
         self.mul(&inverse)
     }
 
-    pub fn exp(
-        &self,
-        power: &Interval,
-    ) -> Vec<Interval> {
+    pub fn exp(&self, power: &Interval) -> Vec<Interval> {
         let minmax = [self.min, self.max]
             .iter()
             .cartesian_product(&[power.min, power.max])
@@ -107,15 +75,15 @@ impl Interval {
             .into_option()
             .unwrap();
 
-        vec![
-            Interval {
-                min: if self.contains_zero() { 0.0 } else { minmax.0 },
-                max: minmax.1,
-            },
-        ]
+        vec![Interval {
+            min: if self.contains_zero() { 0.0 } else { minmax.0 },
+            max: minmax.1,
+        }]
     }
 
-    pub fn middle(&self) -> f32 {(self.min + self.max) / 2.0}
+    pub fn middle(&self) -> f32 {
+        (self.min + self.max) / 2.0
+    }
 
     pub fn split(&self) -> [Interval; 2] {
         let middle = self.middle();
@@ -154,7 +122,8 @@ pub fn permute_intervals<A, F>(
 ) -> Vec<Interval>
 where
     F: FnMut((&Interval, &Interval)) -> Vec<Interval>,
-    A: Function, {
+    A: Function,
+{
     let n1_i = node1.evaluate_interval(&bindings);
     let n2_i = node2.evaluate_interval(&bindings);
 

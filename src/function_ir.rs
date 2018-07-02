@@ -14,10 +14,7 @@ pub enum Node {
 }
 
 impl Node {
-    pub fn evaluate(
-        &self,
-        bindings: &HashMap<char, f32>,
-    ) -> f32 {
+    pub fn evaluate(&self, bindings: &HashMap<char, f32>) -> f32 {
         match *self {
             Node::Add(ref n1, ref n2) => n1.evaluate(&bindings) + n2.evaluate(&bindings),
             Node::Sub(ref n1, ref n2) => n1.evaluate(&bindings) - n2.evaluate(&bindings),
@@ -29,49 +26,41 @@ impl Node {
         }
     }
 
-    pub fn evaluate_intervals(
-        &self,
-        bindings: &HashMap<char, Interval>,
-    ) -> Vec<Interval> {
+    pub fn evaluate_intervals(&self, bindings: &HashMap<char, Interval>) -> Vec<Interval> {
         match *self {
             Node::Add(ref n1, ref n2) => {
                 permute_intervals(&n1, &n2, &bindings, |(interval1, interval2)| {
                     interval1.add(interval2)
                 })
-            },
+            }
             Node::Sub(ref n1, ref n2) => {
                 permute_intervals(&n1, &n2, &bindings, |(interval1, interval2)| {
                     interval1.sub(interval2)
                 })
-            },
+            }
             Node::Mul(ref n1, ref n2) => {
                 permute_intervals(&n1, &n2, &bindings, |(interval1, interval2)| {
                     interval1.mul(interval2)
                 })
-            },
+            }
             Node::Exp(ref n1, ref n2) => {
                 permute_intervals(&n1, &n2, &bindings, |(interval1, interval2)| {
                     interval1.exp(interval2)
                 })
-            },
+            }
             Node::Div(ref n1, ref n2) => {
                 permute_intervals(&n1, n2, &bindings, |(interval1, interval2)| {
                     interval1.div(interval2)
                 })
-            },
+            }
             Node::Constant(c) => vec![Interval { min: c, max: c }],
-            Node::Variable(v) => vec![bindings.get(&v).unwrap().clone()], 
+            Node::Variable(v) => vec![bindings.get(&v).unwrap().clone()],
         }
     }
 }
 
 impl Function for Node {
-    fn evaluate(
-        &self,
-        x: f32,
-        y: f32,
-        z: f32,
-    ) -> f32 {
+    fn evaluate(&self, x: f32, y: f32, z: f32) -> f32 {
         let mut bindings = HashMap::new();
         bindings.insert('x', x);
         bindings.insert('y', y);
@@ -80,10 +69,7 @@ impl Function for Node {
         self.evaluate(&bindings)
     }
 
-    fn evaluate_interval(
-        &self,
-        bindings: &HashMap<char, Interval>,
-    ) -> Vec<Interval> {
+    fn evaluate_interval(&self, bindings: &HashMap<char, Interval>) -> Vec<Interval> {
         self.evaluate_intervals(&bindings)
     }
 }

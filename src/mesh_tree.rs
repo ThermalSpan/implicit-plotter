@@ -1,22 +1,21 @@
-use function::*;
-use interval::Interval;
 use cgmath::Vector3;
-use interval::contains_zero;
-use itertools::Itertools;
-use std::iter::FromIterator;
-use std::collections::{HashMap, HashSet};
-use std::io::Write;
-use std::iter::Iterator;
+use function::*;
 use geoprim::*;
+use interval::contains_zero;
+use interval::Interval;
+use itertools::Itertools;
 use key;
 use key::Key;
+use std::collections::{HashMap, HashSet};
+use std::io::Write;
+use std::iter::FromIterator;
+use std::iter::Iterator;
 
 pub struct Geometry {
     pub vertices: Vec<Vector3<f32>>,
     pub triangles: Vec<u32>,
-    pub lines: Vec<u32>
+    pub lines: Vec<u32>,
 }
-
 
 #[derive(Debug, Copy, Clone)]
 pub struct BoundingBox {
@@ -34,18 +33,16 @@ impl BoundingBox {
         x_is.iter()
             .cartesian_product(y_is.iter())
             .cartesian_product(z_is.iter())
-            .map(|((x, y), z)| {
-                BoundingBox {
-                    x: x.clone(),
-                    y: y.clone(),
-                    z: z.clone(),
-                }
+            .map(|((x, y), z)| BoundingBox {
+                x: x.clone(),
+                y: y.clone(),
+                z: z.clone(),
             })
             .collect()
     }
 
     pub fn contains_root<F: Function>(&self, f: &Box<F>) -> bool {
-         let mut bindings = HashMap::new();
+        let mut bindings = HashMap::new();
         bindings.insert('x', self.x);
         bindings.insert('y', self.y);
         bindings.insert('z', self.z);
@@ -54,11 +51,7 @@ impl BoundingBox {
     }
 
     pub fn center(&self) -> Vector3<f32> {
-        Vector3::new(
-            self.x.middle(),
-            self.y.middle(),
-            self.z.middle()
-        )
+        Vector3::new(self.x.middle(), self.y.middle(), self.z.middle())
     }
 
     pub fn clamp_vector(&self, v: &mut Vector3<f32>) {
@@ -67,7 +60,7 @@ impl BoundingBox {
         v.z = self.z.clamp_value(v.z);
     }
 
-    pub fn add_to_plot(&self, plot: &mut Plot ) {
+    pub fn add_to_plot(&self, plot: &mut Plot) {
         // Build up the outline of a cube
         //
         // 1.) Make a point buffer with all the corners
@@ -93,7 +86,7 @@ impl BoundingBox {
             (0, 4),
             (1, 5),
             (3, 7),
-            (2, 6)
+            (2, 6),
         ];
 
         for (p1, p2) in index_pairs {
@@ -108,11 +101,10 @@ pub struct MeshTree<K: key::Key, F: Function> {
     solution_map: HashMap<K, BoundingBox>,
     vertex_map: HashMap<K, Vector3<f32>>,
     edge_set: HashSet<(K, K)>,
-    triangles: Vec<(K, K, K)>, 
+    triangles: Vec<(K, K, K)>,
 }
 
-
-impl  <F: Function> MeshTree<key::MortonKey, F> {
+impl<F: Function> MeshTree<key::MortonKey, F> {
     pub fn new(f: Box<F>, bb: BoundingBox) -> MeshTree<key::MortonKey, F> {
         let mut result = MeshTree {
             function: f,
@@ -163,12 +155,15 @@ impl  <F: Function> MeshTree<key::MortonKey, F> {
     }
 
     pub fn generate_edge_set(&mut self) {
-        let key_set: HashSet<key::MortonKey> = HashSet::from_iter(self.solution_map.keys().map(|k| k.clone()));
+        let key_set: HashSet<key::MortonKey> =
+            HashSet::from_iter(self.solution_map.keys().map(|k| k.clone()));
         for key in &key_set {
             key.clone()
                 .component_neighbors()
                 .filter(|n_k| n_k > key && key_set.contains(n_k))
-                .for_each(|n_k| {self.edge_set.insert((key.clone(), n_k.clone()));})
+                .for_each(|n_k| {
+                    self.edge_set.insert((key.clone(), n_k.clone()));
+                })
         }
     }
 
@@ -182,7 +177,7 @@ impl  <F: Function> MeshTree<key::MortonKey, F> {
             for neighbor_key in neighbors {
                 if let Some(neighbor) = self.vertex_map.get(&neighbor_key) {
                     count += 1;
-                    sum = sum + neighbor; 
+                    sum = sum + neighbor;
                 }
             }
 
@@ -203,7 +198,7 @@ impl  <F: Function> MeshTree<key::MortonKey, F> {
         self.vertex_map = new_vertex_map;
     }
 
-    pub fn add_to_plot(&self, add_bb: bool, add_vertices: bool, add_edges: bool, plot: &mut Plot ) {
+    pub fn add_to_plot(&self, add_bb: bool, add_vertices: bool, add_edges: bool, plot: &mut Plot) {
         if add_bb {
             for bb in self.solution_map.values() {
                 bb.add_to_plot(plot);
@@ -212,7 +207,11 @@ impl  <F: Function> MeshTree<key::MortonKey, F> {
 
         if add_vertices {
             for vertex in self.vertex_map.values() {
-                plot.add_point(Point { x: vertex.x, y: vertex.y, z: vertex.z });
+                plot.add_point(Point {
+                    x: vertex.x,
+                    y: vertex.y,
+                    z: vertex.z,
+                });
             }
         }
 
@@ -222,11 +221,15 @@ impl  <F: Function> MeshTree<key::MortonKey, F> {
                 let c2 = &self.vertex_map.get(key2).unwrap();
 
                 let p1 = Point {
-                    x: c1.x, y: c1.y, z: c1.z
+                    x: c1.x,
+                    y: c1.y,
+                    z: c1.z,
                 };
 
                 let p2 = Point {
-                    x: c2.x, y: c2.y, z: c2.z
+                    x: c2.x,
+                    y: c2.y,
+                    z: c2.z,
                 };
 
                 plot.add_line(LineSegment::new(p1, p2));

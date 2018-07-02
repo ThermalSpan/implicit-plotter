@@ -3,10 +3,7 @@ use parser_error::{Expected, ParseError, ParseResult};
 
 type BNode = Box<Node>;
 
-fn check_index<'a>(
-    input: &'a [char],
-    current_index: usize,
-) -> ParseResult<()> {
+fn check_index<'a>(input: &'a [char], current_index: usize) -> ParseResult<()> {
     if current_index >= input.len() {
         Err(ParseError::UnexpectedEnd)
     } else {
@@ -14,10 +11,7 @@ fn check_index<'a>(
     }
 }
 
-fn try_incr_index<'a>(
-    input: &'a [char],
-    current_index: usize,
-) -> ParseResult<usize> {
+fn try_incr_index<'a>(input: &'a [char], current_index: usize) -> ParseResult<usize> {
     let mut index = current_index + 1;
     check_index(&input, index)?;
 
@@ -29,10 +23,7 @@ fn try_incr_index<'a>(
     Ok(index)
 }
 
-fn incr_index<'a>(
-    input: &'a [char],
-    current_index: usize,
-) -> usize {
+fn incr_index<'a>(input: &'a [char], current_index: usize) -> usize {
     let mut index = current_index + 1;
 
     while index < input.len() && input[index] == ' ' {
@@ -42,10 +33,7 @@ fn incr_index<'a>(
     index
 }
 
-pub fn parse_expression<'a>(
-    input: &'a [char],
-    current_index: usize,
-) -> ParseResult<BNode> {
+pub fn parse_expression<'a>(input: &'a [char], current_index: usize) -> ParseResult<BNode> {
     let (root, index) = parse_add(&input, current_index)?;
 
     if index < input.len() {
@@ -55,10 +43,7 @@ pub fn parse_expression<'a>(
     }
 }
 
-fn parse_add<'a>(
-    input: &'a [char],
-    current_index: usize,
-) -> ParseResult<(BNode, usize)> {
+fn parse_add<'a>(input: &'a [char], current_index: usize) -> ParseResult<(BNode, usize)> {
     let (mut base, mut index) = parse_mul(&input, current_index)?;
 
     while index < input.len() && (input[index] == '-' || input[index] == '+') {
@@ -78,10 +63,7 @@ fn parse_add<'a>(
     Ok((base, index))
 }
 
-fn parse_mul<'a>(
-    input: &'a [char],
-    current_index: usize,
-) -> ParseResult<(BNode, usize)> {
+fn parse_mul<'a>(input: &'a [char], current_index: usize) -> ParseResult<(BNode, usize)> {
     let (mut base, mut index) = parse_exp(&input, current_index)?;
 
     while index < input.len() && (input[index] == '*' || input[index] == '/') {
@@ -101,10 +83,7 @@ fn parse_mul<'a>(
     Ok((base, index))
 }
 
-fn parse_exp<'a>(
-    input: &'a [char],
-    current_index: usize,
-) -> ParseResult<(BNode, usize)> {
+fn parse_exp<'a>(input: &'a [char], current_index: usize) -> ParseResult<(BNode, usize)> {
     let (base, mut index) = parse_primary(&input, current_index)?;
 
     if index < input.len() && input[index] == '^' {
@@ -119,10 +98,7 @@ fn parse_exp<'a>(
     }
 }
 
-fn parse_primary<'a>(
-    input: &'a [char],
-    current_index: usize,
-) -> ParseResult<(BNode, usize)> {
+fn parse_primary<'a>(input: &'a [char], current_index: usize) -> ParseResult<(BNode, usize)> {
     let mut index = current_index;
 
     if input[index] == '(' {
@@ -147,10 +123,7 @@ fn parse_primary<'a>(
     }
 }
 
-fn parse_base<'a>(
-    input: &'a [char],
-    current_index: usize,
-) -> ParseResult<(BNode, usize)> {
+fn parse_base<'a>(input: &'a [char], current_index: usize) -> ParseResult<(BNode, usize)> {
     let mut index = current_index;
     check_index(&input, index)?;
 
@@ -168,7 +141,7 @@ fn parse_base<'a>(
             let node = Node::Variable(input[index]);
             index = incr_index(&input, index);
             (Box::new(node), index)
-        },
+        }
         d if d.is_digit(10) => parse_number(input, index)?,
         c => {
             return Err(ParseError::UnexpectedChar {
@@ -176,7 +149,7 @@ fn parse_base<'a>(
                 pos: index,
                 exp: Expected::Base,
             })
-        },
+        }
     };
 
     let result_node;
@@ -190,10 +163,7 @@ fn parse_base<'a>(
     Ok((result_node, new_index))
 }
 
-fn parse_number<'a>(
-    input: &'a [char],
-    current_index: usize,
-) -> ParseResult<(BNode, usize)> {
+fn parse_number<'a>(input: &'a [char], current_index: usize) -> ParseResult<(BNode, usize)> {
     let mut index = current_index;
     if !input[index].is_digit(10) {
         return Err(ParseError::UnexpectedChar {
@@ -225,16 +195,12 @@ fn parse_number<'a>(
     Ok((bnode, incr_index(&input, index - 1)))
 }
 
-
 #[cfg(test)]
 mod tests {
     use super::*;
     use std::collections::HashMap;
 
-    fn assert_constant(
-        result: &Node,
-        expected: f32,
-    ) {
+    fn assert_constant(result: &Node, expected: f32) {
         if let &Node::Constant(ref c) = result {
             assert_similiar!(c, expected);
         } else {
@@ -242,10 +208,7 @@ mod tests {
         }
     }
 
-    fn assert_variable(
-        result: &Node,
-        expected: char,
-    ) {
+    fn assert_variable(result: &Node, expected: char) {
         if let &Node::Variable(c) = result {
             assert_eq!(c, expected);
         } else {

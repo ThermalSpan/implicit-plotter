@@ -10,10 +10,7 @@ pub enum Expected {
 }
 
 impl fmt::Display for Expected {
-    fn fmt(
-        &self,
-        f: &mut fmt::Formatter,
-    ) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match *self {
             Expected::Base => write!(f, "Base"),
             Expected::Constant => write!(f, "Constant"),
@@ -41,10 +38,7 @@ impl Error for ParseError {
 }
 
 impl fmt::Display for ParseError {
-    fn fmt(
-        &self,
-        f: &mut fmt::Formatter,
-    ) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
             &ParseError::UnexpectedChar {
                 ref pos,
