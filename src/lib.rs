@@ -1,3 +1,5 @@
+#[macro_use]
+extern crate assert;
 extern crate cgmath;
 extern crate geoprim;
 extern crate itertools;

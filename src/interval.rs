@@ -23,8 +23,8 @@ impl Interval {
 
     pub fn sub(&self, other: &Interval) -> Vec<Interval> {
         vec![Interval {
-            min: self.min - other.min,
-            max: self.max - other.max,
+            min: self.min - other.max,
+            max: self.max - other.min,
         }]
     }
 
@@ -100,7 +100,7 @@ impl Interval {
     }
 
     pub fn contains_zero(&self) -> bool {
-        self.min <= 0.0 && self.max >= 0.0
+        self.min <= 0.0 && self.max > 0.0
     }
 
     pub fn clamp_value(&self, v: f32) -> f32 {
@@ -137,4 +137,58 @@ pub fn contains_zero(intervals: &[Interval]) -> bool {
         }
     }
     false
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use assert::*;
+
+    #[test]
+    fn test_add() {
+        let a = Interval::new(1.0, 2.0);
+        let b = Interval::new(2.0, 3.0);
+        let r = a.add(&b);
+        close(r[0].min, 3.0, f32::EPSILON);
+        close(r[0].max, 5.0, f32::EPSILON);
+
+        let a = Interval::new(-1.0, 1.0);
+        let b = Interval::new(-1.0, 1.0);
+        let r = a.add(&b);
+        close(r[0].min, -2.0, f32::EPSILON);
+        close(r[0].max, 2.0, f32::EPSILON);
+
+        let a = Interval::new(-1.0, 4.0);
+        let b = Interval::new(2.0, 3.0);
+        let r = a.add(&b);
+        close(r[0].min, 1.0, f32::EPSILON);
+        close(r[0].max, 7.0, f32::EPSILON);
+
+        let a = Interval::new(-1.0, -0.5);
+        let b = Interval::new(-2.0, -0.5);
+        let r = a.add(&b);
+        close(r[0].min, -3.0, f32::EPSILON);
+        close(r[0].max, -1.0, f32::EPSILON);
+    }
+
+    #[test]
+    fn test_sub() {
+        let a = Interval::new(1.0, 2.0);
+        let b = Interval::new(2.0, 3.0);
+        let r = a.sub(&b);
+        close(r[0].min, -2.0, f32::EPSILON);
+        close(r[0].max, 0.0, f32::EPSILON);
+
+        let a = Interval::new(-1.0, 1.0);
+        let b = Interval::new(-1.0, 1.0);
+        let r = a.sub(&b);
+        close(r[0].min, -2.0, f32::EPSILON);
+        close(r[0].max, 2.0, f32::EPSILON);
+
+        let a = Interval::new(-1.0, 1.0);
+        let b = Interval::new(-1.0, 1.0);
+        let r = a.sub(&b);
+        close(r[0].min, -2.0, f32::EPSILON);
+        close(r[0].max, 2.0, f32::EPSILON);
+    }
 }
