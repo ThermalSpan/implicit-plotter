@@ -21,7 +21,7 @@ const CONVERSION_MASKS: [u64; 6] = [
     0b000000000000000000000000000000000000000000111111111111111111111,
 ];
 
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Copy, Clone, PartialOrd, Ord, PartialEq, Eq)]
 pub enum NeighborRelation {
     Less = -1,
     Same = 0,
@@ -67,7 +67,7 @@ const ComponentNeighbors: [Neighbor; 6] = [
     },
 ];
 
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Copy, Clone, PartialOrd, Ord, PartialEq, Eq)]
 pub struct Neighbor {
     x: NeighborRelation,
     y: NeighborRelation,
@@ -595,6 +595,59 @@ mod tests {
                 z: NeighborRelation::More
             }),
             Some(MortonKey(0b1111000111000111000111111))
+        );
+    }
+
+    #[test]
+    fn neighbors_and_order() {
+        let mut neighbors: Vec<Neighbor> = Neighbor::component_neighbors().collect();
+        neighbors.sort();
+
+        assert_eq!(
+            neighbors,
+            vec![
+                Neighbor { x: NeighborRelation::Less, y: NeighborRelation::Same, z: NeighborRelation::Same },
+                Neighbor { x: NeighborRelation::Same, y: NeighborRelation::Less, z: NeighborRelation::Same },
+                Neighbor { x: NeighborRelation::Same, y: NeighborRelation::Same, z: NeighborRelation::Less },
+                Neighbor { x: NeighborRelation::Same, y: NeighborRelation::Same, z: NeighborRelation::More },
+                Neighbor { x: NeighborRelation::Same, y: NeighborRelation::More, z: NeighborRelation::Same },
+                Neighbor { x: NeighborRelation::More, y: NeighborRelation::Same, z: NeighborRelation::Same },
+            ]
+        );
+
+        let mut neighbors: Vec<Neighbor> = Neighbor::all_neighbors().collect();
+        neighbors.sort();
+
+        assert_eq!(
+            neighbors,
+            vec![
+                Neighbor { x: NeighborRelation::Less, y: NeighborRelation::Less, z: NeighborRelation::Less },
+                Neighbor { x: NeighborRelation::Less, y: NeighborRelation::Less, z: NeighborRelation::Same },
+                Neighbor { x: NeighborRelation::Less, y: NeighborRelation::Less, z: NeighborRelation::More },
+                Neighbor { x: NeighborRelation::Less, y: NeighborRelation::Same, z: NeighborRelation::Less },
+                Neighbor { x: NeighborRelation::Less, y: NeighborRelation::Same, z: NeighborRelation::Same },
+                Neighbor { x: NeighborRelation::Less, y: NeighborRelation::Same, z: NeighborRelation::More },
+                Neighbor { x: NeighborRelation::Less, y: NeighborRelation::More, z: NeighborRelation::Less },
+                Neighbor { x: NeighborRelation::Less, y: NeighborRelation::More, z: NeighborRelation::Same },
+                Neighbor { x: NeighborRelation::Less, y: NeighborRelation::More, z: NeighborRelation::More },
+                Neighbor { x: NeighborRelation::Same, y: NeighborRelation::Less, z: NeighborRelation::Less },
+                Neighbor { x: NeighborRelation::Same, y: NeighborRelation::Less, z: NeighborRelation::Same },
+                Neighbor { x: NeighborRelation::Same, y: NeighborRelation::Less, z: NeighborRelation::More },
+                Neighbor { x: NeighborRelation::Same, y: NeighborRelation::Same, z: NeighborRelation::Less },
+                Neighbor { x: NeighborRelation::Same, y: NeighborRelation::Same, z: NeighborRelation::More },
+                Neighbor { x: NeighborRelation::Same, y: NeighborRelation::More, z: NeighborRelation::Less },
+                Neighbor { x: NeighborRelation::Same, y: NeighborRelation::More, z: NeighborRelation::Same },
+                Neighbor { x: NeighborRelation::Same, y: NeighborRelation::More, z: NeighborRelation::More },
+                Neighbor { x: NeighborRelation::More, y: NeighborRelation::Less, z: NeighborRelation::Less },
+                Neighbor { x: NeighborRelation::More, y: NeighborRelation::Less, z: NeighborRelation::Same },
+                Neighbor { x: NeighborRelation::More, y: NeighborRelation::Less, z: NeighborRelation::More },
+                Neighbor { x: NeighborRelation::More, y: NeighborRelation::Same, z: NeighborRelation::Less },
+                Neighbor { x: NeighborRelation::More, y: NeighborRelation::Same, z: NeighborRelation::Same },
+                Neighbor { x: NeighborRelation::More, y: NeighborRelation::Same, z: NeighborRelation::More },
+                Neighbor { x: NeighborRelation::More, y: NeighborRelation::More, z: NeighborRelation::Less },
+                Neighbor { x: NeighborRelation::More, y: NeighborRelation::More, z: NeighborRelation::Same },
+                Neighbor { x: NeighborRelation::More, y: NeighborRelation::More, z: NeighborRelation::More },
+            ]
         );
     }
 }

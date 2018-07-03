@@ -188,7 +188,7 @@ impl<F: Function> MeshTree<key::MortonKey, F> {
 
             sum /= count as f32;
 
-            let mut new_v = vertex + 0.5 * (sum - vertex);
+            let mut new_v = vertex + 0.2 * (sum - vertex);
             let bb = self.solution_map.get(&key).unwrap();
             bb.clamp_vector(&mut new_v);
 
