@@ -606,12 +606,36 @@ mod tests {
         assert_eq!(
             neighbors,
             vec![
-                Neighbor { x: NeighborRelation::Less, y: NeighborRelation::Same, z: NeighborRelation::Same },
-                Neighbor { x: NeighborRelation::Same, y: NeighborRelation::Less, z: NeighborRelation::Same },
-                Neighbor { x: NeighborRelation::Same, y: NeighborRelation::Same, z: NeighborRelation::Less },
-                Neighbor { x: NeighborRelation::Same, y: NeighborRelation::Same, z: NeighborRelation::More },
-                Neighbor { x: NeighborRelation::Same, y: NeighborRelation::More, z: NeighborRelation::Same },
-                Neighbor { x: NeighborRelation::More, y: NeighborRelation::Same, z: NeighborRelation::Same },
+                Neighbor {
+                    x: NeighborRelation::Less,
+                    y: NeighborRelation::Same,
+                    z: NeighborRelation::Same,
+                },
+                Neighbor {
+                    x: NeighborRelation::Same,
+                    y: NeighborRelation::Less,
+                    z: NeighborRelation::Same,
+                },
+                Neighbor {
+                    x: NeighborRelation::Same,
+                    y: NeighborRelation::Same,
+                    z: NeighborRelation::Less,
+                },
+                Neighbor {
+                    x: NeighborRelation::Same,
+                    y: NeighborRelation::Same,
+                    z: NeighborRelation::More,
+                },
+                Neighbor {
+                    x: NeighborRelation::Same,
+                    y: NeighborRelation::More,
+                    z: NeighborRelation::Same,
+                },
+                Neighbor {
+                    x: NeighborRelation::More,
+                    y: NeighborRelation::Same,
+                    z: NeighborRelation::Same,
+                },
             ]
         );
 
@@ -621,32 +645,136 @@ mod tests {
         assert_eq!(
             neighbors,
             vec![
-                Neighbor { x: NeighborRelation::Less, y: NeighborRelation::Less, z: NeighborRelation::Less },
-                Neighbor { x: NeighborRelation::Less, y: NeighborRelation::Less, z: NeighborRelation::Same },
-                Neighbor { x: NeighborRelation::Less, y: NeighborRelation::Less, z: NeighborRelation::More },
-                Neighbor { x: NeighborRelation::Less, y: NeighborRelation::Same, z: NeighborRelation::Less },
-                Neighbor { x: NeighborRelation::Less, y: NeighborRelation::Same, z: NeighborRelation::Same },
-                Neighbor { x: NeighborRelation::Less, y: NeighborRelation::Same, z: NeighborRelation::More },
-                Neighbor { x: NeighborRelation::Less, y: NeighborRelation::More, z: NeighborRelation::Less },
-                Neighbor { x: NeighborRelation::Less, y: NeighborRelation::More, z: NeighborRelation::Same },
-                Neighbor { x: NeighborRelation::Less, y: NeighborRelation::More, z: NeighborRelation::More },
-                Neighbor { x: NeighborRelation::Same, y: NeighborRelation::Less, z: NeighborRelation::Less },
-                Neighbor { x: NeighborRelation::Same, y: NeighborRelation::Less, z: NeighborRelation::Same },
-                Neighbor { x: NeighborRelation::Same, y: NeighborRelation::Less, z: NeighborRelation::More },
-                Neighbor { x: NeighborRelation::Same, y: NeighborRelation::Same, z: NeighborRelation::Less },
-                Neighbor { x: NeighborRelation::Same, y: NeighborRelation::Same, z: NeighborRelation::More },
-                Neighbor { x: NeighborRelation::Same, y: NeighborRelation::More, z: NeighborRelation::Less },
-                Neighbor { x: NeighborRelation::Same, y: NeighborRelation::More, z: NeighborRelation::Same },
-                Neighbor { x: NeighborRelation::Same, y: NeighborRelation::More, z: NeighborRelation::More },
-                Neighbor { x: NeighborRelation::More, y: NeighborRelation::Less, z: NeighborRelation::Less },
-                Neighbor { x: NeighborRelation::More, y: NeighborRelation::Less, z: NeighborRelation::Same },
-                Neighbor { x: NeighborRelation::More, y: NeighborRelation::Less, z: NeighborRelation::More },
-                Neighbor { x: NeighborRelation::More, y: NeighborRelation::Same, z: NeighborRelation::Less },
-                Neighbor { x: NeighborRelation::More, y: NeighborRelation::Same, z: NeighborRelation::Same },
-                Neighbor { x: NeighborRelation::More, y: NeighborRelation::Same, z: NeighborRelation::More },
-                Neighbor { x: NeighborRelation::More, y: NeighborRelation::More, z: NeighborRelation::Less },
-                Neighbor { x: NeighborRelation::More, y: NeighborRelation::More, z: NeighborRelation::Same },
-                Neighbor { x: NeighborRelation::More, y: NeighborRelation::More, z: NeighborRelation::More },
+                Neighbor {
+                    x: NeighborRelation::Less,
+                    y: NeighborRelation::Less,
+                    z: NeighborRelation::Less,
+                },
+                Neighbor {
+                    x: NeighborRelation::Less,
+                    y: NeighborRelation::Less,
+                    z: NeighborRelation::Same,
+                },
+                Neighbor {
+                    x: NeighborRelation::Less,
+                    y: NeighborRelation::Less,
+                    z: NeighborRelation::More,
+                },
+                Neighbor {
+                    x: NeighborRelation::Less,
+                    y: NeighborRelation::Same,
+                    z: NeighborRelation::Less,
+                },
+                Neighbor {
+                    x: NeighborRelation::Less,
+                    y: NeighborRelation::Same,
+                    z: NeighborRelation::Same,
+                },
+                Neighbor {
+                    x: NeighborRelation::Less,
+                    y: NeighborRelation::Same,
+                    z: NeighborRelation::More,
+                },
+                Neighbor {
+                    x: NeighborRelation::Less,
+                    y: NeighborRelation::More,
+                    z: NeighborRelation::Less,
+                },
+                Neighbor {
+                    x: NeighborRelation::Less,
+                    y: NeighborRelation::More,
+                    z: NeighborRelation::Same,
+                },
+                Neighbor {
+                    x: NeighborRelation::Less,
+                    y: NeighborRelation::More,
+                    z: NeighborRelation::More,
+                },
+                Neighbor {
+                    x: NeighborRelation::Same,
+                    y: NeighborRelation::Less,
+                    z: NeighborRelation::Less,
+                },
+                Neighbor {
+                    x: NeighborRelation::Same,
+                    y: NeighborRelation::Less,
+                    z: NeighborRelation::Same,
+                },
+                Neighbor {
+                    x: NeighborRelation::Same,
+                    y: NeighborRelation::Less,
+                    z: NeighborRelation::More,
+                },
+                Neighbor {
+                    x: NeighborRelation::Same,
+                    y: NeighborRelation::Same,
+                    z: NeighborRelation::Less,
+                },
+                Neighbor {
+                    x: NeighborRelation::Same,
+                    y: NeighborRelation::Same,
+                    z: NeighborRelation::More,
+                },
+                Neighbor {
+                    x: NeighborRelation::Same,
+                    y: NeighborRelation::More,
+                    z: NeighborRelation::Less,
+                },
+                Neighbor {
+                    x: NeighborRelation::Same,
+                    y: NeighborRelation::More,
+                    z: NeighborRelation::Same,
+                },
+                Neighbor {
+                    x: NeighborRelation::Same,
+                    y: NeighborRelation::More,
+                    z: NeighborRelation::More,
+                },
+                Neighbor {
+                    x: NeighborRelation::More,
+                    y: NeighborRelation::Less,
+                    z: NeighborRelation::Less,
+                },
+                Neighbor {
+                    x: NeighborRelation::More,
+                    y: NeighborRelation::Less,
+                    z: NeighborRelation::Same,
+                },
+                Neighbor {
+                    x: NeighborRelation::More,
+                    y: NeighborRelation::Less,
+                    z: NeighborRelation::More,
+                },
+                Neighbor {
+                    x: NeighborRelation::More,
+                    y: NeighborRelation::Same,
+                    z: NeighborRelation::Less,
+                },
+                Neighbor {
+                    x: NeighborRelation::More,
+                    y: NeighborRelation::Same,
+                    z: NeighborRelation::Same,
+                },
+                Neighbor {
+                    x: NeighborRelation::More,
+                    y: NeighborRelation::Same,
+                    z: NeighborRelation::More,
+                },
+                Neighbor {
+                    x: NeighborRelation::More,
+                    y: NeighborRelation::More,
+                    z: NeighborRelation::Less,
+                },
+                Neighbor {
+                    x: NeighborRelation::More,
+                    y: NeighborRelation::More,
+                    z: NeighborRelation::Same,
+                },
+                Neighbor {
+                    x: NeighborRelation::More,
+                    y: NeighborRelation::More,
+                    z: NeighborRelation::More,
+                },
             ]
         );
     }
