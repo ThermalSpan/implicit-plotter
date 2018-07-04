@@ -101,7 +101,7 @@ pub struct MeshTree<K: key::Key, F: Function> {
     solution_map: HashMap<K, BoundingBox>,
     vertex_map: HashMap<K, Vector3<f32>>,
     edge_set: HashSet<(K, K)>,
-    triangles: Vec<(K, K, K)>,
+    triangle_set: HashSet<[K; 3]>,
 }
 
 impl<F: Function> MeshTree<key::MortonKey, F> {
@@ -112,7 +112,7 @@ impl<F: Function> MeshTree<key::MortonKey, F> {
             edge_set: HashSet::new(),
             solution_map: HashMap::new(),
             vertex_map: HashMap::new(),
-            triangles: Vec::new(),
+            triangle_set: HashSet::new(),
         };
 
         let root_key = key::MortonKey::root_key();
@@ -126,7 +126,7 @@ impl<F: Function> MeshTree<key::MortonKey, F> {
     pub fn next_level(&mut self) {
         self.vertex_map.clear();
         self.edge_set.clear();
-        self.triangles.clear();
+        self.triangle_set.clear();
         self.level += 1;
 
         let mut new_solution_map = HashMap::new();
@@ -198,7 +198,70 @@ impl<F: Function> MeshTree<key::MortonKey, F> {
         self.vertex_map = new_vertex_map;
     }
 
-    pub fn add_to_plot(&self, add_bb: bool, add_vertices: bool, add_edges: bool, plot: &mut Plot) {
+    pub fn add_vertex_triangles(&mut self, vertex_key: key::MortonKey) {
+        let maybe_neighbors: Vec<Option<key::MortonKey>> = key::Neighbor::component_neighbors()
+            .map(|neighbor| vertex_key.neighbor_key(neighbor))
+            .map(|maybe_neighbor_key| {
+                if maybe_neighbor_key.is_none() {
+                    return None;
+                }
+
+                let neighbor_key = maybe_neighbor_key.unwrap();
+
+                if self.solution_map.contains_key(&neighbor_key) {
+                    Some(neighbor_key)
+                } else {
+                    None
+                }
+            })
+            .collect();
+
+        let triangle_iter = [
+            [0, 1], // [Neighbor { x: Same, y: Same, z: Less }, Neighbor { x: Same, y: Same, z: More }]
+            //            [0, 2], // [Neighbor { x: Same, y: Same, z: Less }, Neighbor { x: Same, y: Less, z: Same }]
+            [0, 3], // [Neighbor { x: Same, y: Same, z: Less }, Neighbor { x: Same, y: More, z: Same }]
+            //            [0, 4], // [Neighbor { x: Same, y: Same, z: Less }, Neighbor { x: Less, y: Same, z: Same }]
+            [0, 5], // [Neighbor { x: Same, y: Same, z: Less }, Neighbor { x: More, y: Same, z: Same }]
+            //            [1, 2], // [Neighbor { x: Same, y: Same, z: More }, Neighbor { x: Same, y: Less, z: Same }]
+            [1, 3], // [Neighbor { x: Same, y: Same, z: More }, Neighbor { x: Same, y: More, z: Same }]
+            //            [1, 4], // [Neighbor { x: Same, y: Same, z: More }, Neighbor { x: Less, y: Same, z: Same }]
+            [1, 5], // [Neighbor { x: Same, y: Same, z: More }, Neighbor { x: More, y: Same, z: Same }]
+            //            [2, 3], // [Neighbor { x: Same, y: Less, z: Same }, Neighbor { x: Same, y: More, z: Same }]
+            [2, 4], // [Neighbor { x: Same, y: Less, z: Same }, Neighbor { x: Less, y: Same, z: Same }]
+            //            [2, 5], // [Neighbor { x: Same, y: Less, z: Same }, Neighbor { x: More, y: Same, z: Same }]
+            [3, 4], // [Neighbor { x: Same, y: More, z: Same }, Neighbor { x: Less, y: Same, z: Same }]
+            //           [3, 5], // [Neighbor { x: Same, y: More, z: Same }, Neighbor { x: More, y: Same, z: Same }]
+            [4, 5usize], // [Neighbor { x: Less, y: Same, z: Same }, Neighbor { x: More, y: Same, z: Same }]
+        ].iter()
+            .filter_map(
+                |[a, b]| match (maybe_neighbors[a.clone()], maybe_neighbors[b.clone()]) {
+                    (Some(key_1), Some(key_2)) => {
+                        let mut triangle = [vertex_key, key_1, key_2];
+                        triangle.sort();
+                        Some(triangle)
+                    }
+                    _ => None,
+                },
+            );
+
+        self.triangle_set.extend(triangle_iter);
+    }
+
+    pub fn generate_triangle_set(&mut self) {
+        let keys: Vec<key::MortonKey> = self.solution_map.keys().map(|k| k.clone()).collect();
+        for key in keys {
+            self.add_vertex_triangles(key.clone());
+        }
+    }
+
+    pub fn add_to_plot(
+        &self,
+        add_bb: bool,
+        add_vertices: bool,
+        add_edges: bool,
+        add_mesh: bool,
+        plot: &mut Plot,
+    ) {
         if add_bb {
             for bb in self.solution_map.values() {
                 bb.add_to_plot(plot);
@@ -219,6 +282,34 @@ impl<F: Function> MeshTree<key::MortonKey, F> {
             for (key1, key2) in &self.edge_set {
                 let c1 = &self.vertex_map.get(key1).unwrap();
                 let c2 = &self.vertex_map.get(key2).unwrap();
+
+                let p1 = Point {
+                    x: c1.x,
+                    y: c1.y,
+                    z: c1.z,
+                };
+
+                let p2 = Point {
+                    x: c2.x,
+                    y: c2.y,
+                    z: c2.z,
+                };
+
+                plot.add_line(LineSegment::new(p1, p2));
+            }
+        }
+
+        if add_mesh {
+            let mut edges = HashSet::new();
+            for k in &self.triangle_set {
+                edges.insert((k[0].clone(), k[1].clone()));
+                edges.insert((k[0].clone(), k[2].clone()));
+                edges.insert((k[1].clone(), k[2].clone()));
+            }
+
+            for e in edges {
+                let c1 = &self.vertex_map.get(&e.0).unwrap();
+                let c2 = &self.vertex_map.get(&e.1).unwrap();
 
                 let p1 = Point {
                     x: c1.x,

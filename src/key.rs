@@ -21,7 +21,7 @@ const CONVERSION_MASKS: [u64; 6] = [
     0b000000000000000000000000000000000000000000111111111111111111111,
 ];
 
-#[derive(Debug, Copy, Clone, PartialOrd, Ord, PartialEq, Eq)]
+#[derive(Hash, Debug, Copy, Clone, PartialOrd, Ord, PartialEq, Eq)]
 pub enum NeighborRelation {
     Less = -1,
     Same = 0,
@@ -67,7 +67,7 @@ const ComponentNeighbors: [Neighbor; 6] = [
     },
 ];
 
-#[derive(Debug, Copy, Clone, PartialOrd, Ord, PartialEq, Eq)]
+#[derive(Hash, Debug, Copy, Clone, PartialOrd, Ord, PartialEq, Eq)]
 pub struct Neighbor {
     x: NeighborRelation,
     y: NeighborRelation,
